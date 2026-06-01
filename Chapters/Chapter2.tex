@@ -1,0 +1,650 @@
+﻿% Бүлэг 2
+
+\chapter{Системийн шаардлага тодорхойлох ба шинжилгээ}
+\label{Chapter2}
+\pagecolor{white}
+
+%-------------------------------------------------------------------------------
+
+\section{Шаардлагын инженерчлэлийн ерөнхий ойлголт}
+\textbf{Шаардлагын инженерчлэл} нь системийн хэрэгцээг нарийвчлан тодорхойлж, бичиг баримтжуулж, баталгаажуулдаг үйл явц юм. Энэ нь IEEE 830 стандартын дагуу дараах гол үе шатуудыг агуулдаг \cite{mn_softeng}:
+\begin{itemize}
+    \item [1.] \textbf{Шаардлагыг олох (elicitation).} Хэрэглэгч, бизнесийн талд тулгуурлан хэрэгцээг ойлгох.
+    \item [2.] \textbf{Шинжилгээ.} Зөрчилтэй шаардлагуудыг шийдвэрлэх, давтагдсан хэрэгцээг нэгтгэх.
+    \item [3.] \textbf{Тодорхойлолт (specification).} Албан ёсны баримт болгон бүртгэх.
+    \item [4.] \textbf{Баталгаажуулалт (validation).} Бичигдсэн шаардлага бодит хэрэгцээтэй давхцаж буй эсэхийг шалгах.
+    \item [5.] \textbf{Удирдлага.} Хөгжүүлэлтийн явцад өөрчлөгдсөн шаардлагыг хянах.
+\end{itemize}
+
+Шаардлагууд нь хоёр үндсэн төрөлд хуваагдана: \textbf{функциональ} (систем юу хийх ёстой) ба \textbf{функциональ бус} (систем хэрхэн ажиллах ёстой --- гүйцэтгэл, аюулгүй байдал, найдвартай байдал).
+
+\section{Системийн зорилго, үндсэн функцууд}
+\textbf{FinTrack} системийн гол зорилго нь хэрэглэгчийн орлого, зарлага, бүх дансны үлдэгдэл, банкны хуулга зэргийг нэг газар төвлөрүүлэн хадгалж, AI / LLM технологид суурилан зарлагын хандлагыг автоматаар шинжилж, хэрэглэгчид хувийн санхүүгийн зөвлөмж өгөх хиймэл оюунд тулгуурласан санхүүгийн туслах систем бий болгоход оршино.
+
+Системийн үндсэн функцууд нь дараах есөн модулиас бүрдэнэ:
+\begin{enumerate}
+    \item \textbf{Баталгаажуулалт, профайл удирдлагын модуль} --- имэйл + нууц үг (bcrypt), JWT (24 цаг), нийгмийн сүлжээний нэвтрэлт (Google / Apple / Facebook).
+    \item \textbf{Гүйлгээ удирдлагын модуль} --- орлого/зарлагын CRUD, ангилал, шүүлт, дансны үлдэгдлийн автомат шинэчлэл.
+    \item \textbf{Олон дансны модуль} --- bank / cash / credit\_card / investment гэсэн 4 төрлийн дансыг нэгтгэн хянах.
+    \item \textbf{Сарын төсөв ба давтагдах төлбөрийн модуль} --- ангиллаар лимит, прогресс, давтагдах төлбөрийн хуваарь.
+    \item \textbf{AI чат модуль} --- LLM-д суурилсан, сүүлийн 30 хоногийн контекстийг ашиглах хувийн санхүүгийн чатбот.
+    \item \textbf{Банкны хуулгын AI шинжилгээний модуль} --- PDF / Excel / CSV хуулгыг автомат задлан унших, ангиллаар нэгтгэх, AI хураангуй ба зөвлөмж гаргах.
+    \item \textbf{Push мэдэгдлийн модуль} --- Expo push токен, өдөр тутмын автомат хуваарьчлагчаар AI дүгнэлт хүргэх.
+    \item \textbf{Үйл ажиллагааны бүртгэлийн (audit) модуль} --- бүх чухал үйлдлийг IP хаяг, цагтай хадгалах.
+    \item \textbf{Админы удирдлагын модуль} --- хэрэглэгч жагсаах, идэвхгүй болгох, системийн статистик харах.
+\end{enumerate}
+
+\section{Хэрэглэгчийн шаардлагууд}
+Хэрэглэгчийн шаардлага (User Requirement, UR) нь системээс хэрэглэгчид өгөх ёстой үнэ цэнийг өндөр түвшинд илэрхийлдэг бөгөөд функциональ шаардлагаас ялгаатайгаар техникийн нарийвчлал биш, харин хэрэглэгчийн зорилгод тулгуурладаг.
+
+Хэрэглэгчийн судалгаагаар үндсэн зорилтот хэрэглэгчид болох залуу мэргэжилтнүүд, гэр бүлийн төлөвлөгчид, жижиг бизнес эрхлэгчид, оюутнуудтай ярилцаж дараах ерөнхий шаардлагуудыг тогтоов.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|c|p{3.7cm}|p{8cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Шаардлага}} & \textcolor{white}{\textbf{Тайлбар}} \\ \hline
+UR-01 & Хялбар бүртгэл              & Хэрэглэгч имэйл + нууц үгээр эсвэл Google / Apple / Facebook хаягаар хурдан бүртгүүлж нэвтрэх боломжтой байх. \\ \hline
+UR-02 & Олон банк, олон данс нэг газар & Худалдаа Хөгжлийн Банк, Голомт, Хаан банк болон бэлэн мөнгө, кредит карт, хөрөнгө оруулалтын дансыг нэг программд нэгтгэн хянах. \\ \hline
+UR-03 & Хурдан гүйлгээ оруулах      & Хэдхэн товчлуурын дараалалд орлого/зарлагын гүйлгээ нэмж, дансны үлдэгдэл шууд шинэчлэгдэх. \\ \hline
+UR-04 & Сарын төсөв ба хандлага     & Ангиллаар сарын лимит тогтоох, бодит зарлагатай харьцуулах, өмнөх сартай харьцуулсан savings\% харах. \\ \hline
+UR-05 & Хуулга AI-аар автомат боловсруулах & Банкны PDF / Excel / CSV хуулгыг гар оролтгүйгээр унших, ангиллаар бүлэглэх, AI хураангуй авах. \\ \hline
+UR-06 & AI санхүүгийн зөвлөгөө      & Хувийн санхүүгийн нөхцөлд тулгуурласан хэлээр зөвлөгөө өгөх AI чатбот ашиглах боломж. \\ \hline
+UR-07 & Эрсдэл, хэтрэлтийн анхааруулга & Төсөв хэтрэх, том дүнгийн гүйлгээ, давтагдах төлбөр зэргийг push мэдэгдлээр сэрэмжлүүлэх. \\ \hline
+UR-08 & Давтагдах төлбөр хяналт     & Сар бүр давтагдах түрээс, интернэт, утас, татвар зэргийг хуваариар бүртгэж, эрт сануулах. \\ \hline
+UR-09 & Хувь хүний нууцлал ба аюулгүй байдал & Санхүүгийн өгөгдөл зөвхөн өөрт нь хандах, нууц үг хэшлэгдсэн, JWT-ээр хамгаалагдсан байх. \\ \hline
+UR-10 & Хэрэглэхэд хялбар интерфейс & Монгол + Англи хэл хосолсон, харанхуй загвартай, React Native-ийн жигд UX. \\ \hline
+UR-11 & Өргөн платформын дэмжлэг    & iOS болон Android-ийн аль алинд жигд ажиллах. \\ \hline
+UR-12 & Аудитын мөр                  & Бүх чухал үйлдлийг (нэвтрэх, бүртгүүлэх, нэмэх, устгах) бүртгэх, дараа нь дахин харах боломжтой. \\ \hline
+UR-13 & Системийн төлөвөө мэдэх      & Хэрэглэгч өөрийн ашиглалтын статистик, AI хүсэлтийн тоог тодорхой харж байх. \\ \hline
+UR-14 & Админы удирдлага             & Системийн админ хэрэглэгчдийг жагсаах, идэвхгүй болгох, статистик харах боломжтой. \\ \hline
+\end{tabular}
+\caption{Хэрэглэгчийн шаардлагын жагсаалт}
+\label{tab:ur}
+\end{table}
+
+\section{Системийн хэрэглэгчийн төрлүүд}
+Систем нь нийтдээ \textbf{хоёр үндсэн оролцогчтой} (actor) --- энгийн хэрэглэгч болон админ. Систем нь үнэгүй ашиглагдах тул хэрэглэгчдийн хооронд тариф, квотын ялгаа байхгүй. Админ нь зөвхөн системийн удирдлага, хяналтын зорилгоор тусдаа эрхтэй.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|p{2.4cm}|p{3.4cm}|p{8cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Хэрэглэгчийн бүлэг}} & \textcolor{white}{\textbf{Тодорхойлолт}} & \textcolor{white}{\textbf{Үндсэн үүрэг ба эрх}} \\ \hline
+Хэрэглэгч & Үнэгүй бүртгэлтэй хэрэглэгч & Олон данс үүсгэх, гүйлгээ нэмэх, AI чат, банкны хуулгын AI шинжилгээ, олон валют, сарын төсөв, давтагдах төлбөр, экспорт (PDF/Excel), зорилт хадгаламж зэрэг бүх боломжийг \textbf{хязгааргүй} ашиглах эрхтэй. \\ \hline
+Админ & Системийн ерөнхий хариуцлагатай ажилтан & Бүх хэрэглэгчийг харах, идэвхгүй болгох, устгах, нийт статистик хяналт, аудит лог хянах, системийн тохиргоо өөрчлөх. Энгийн хэрэглэгчийн санхүүгийн өгөгдлийг \textbf{үзэхгүй} (хувь хүний нууцлал). \\ \hline
+\end{tabular}
+\caption{Системийн хэрэглэгчийн төрлүүд}
+\label{tab:user-types}
+\end{table}
+
+\subsection{Хэрэглэгчийн хэв шинжүүд (Persona)}
+Системийг ашиглах зорилтот хэрэглэгчдийг 4 хэв шинж (persona)-аар тодорхойлов.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|p{2.7cm}|p{2.5cm}|p{8cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Хэв шинж}} & \textcolor{white}{\textbf{Нас, ажил}} & \textcolor{white}{\textbf{Хэрэгцээ}} \\ \hline
+Залуу мэргэжилтэн & 23--30, IT/санхүү & Цалингаа хэмнэх, хадгаламж эхлүүлэх, олон банкны данс нэгтгэн хянах \\ \hline
+Гэр бүлийн төлөвлөгч & 30--40, эхнэр/нөхөр & Сарын төсөв, гэр бүлийн зардал хянах, зорилт хадгаламж \\ \hline
+Бизнес эрхлэгч   & 28--45, чөлөөт ажил & Орлого тогтворгүй, давтагдах төлбөр, татварын төлөвлөлт \\ \hline
+Оюутан           & 18--24             & Бага зардлын хяналт, мөнгө хүртэх ангилал, эцэг эхээс шилжүүлэг \\ \hline
+\end{tabular}
+\caption{Зорилтот хэрэглэгчийн хэв шинжүүд}
+\label{tab:personas}
+\end{table}
+
+\section{Функциональ шаардлагууд}
+Системийн функциональ шаардлагуудыг (Functional Requirement) хэрэглэгчийн төрөл тус бүрээр нь \textbf{Хэрэглэгч} болон \textbf{Админ} гэсэн хоёр бүлэгт хуваан дугаарласан. Систем нь үнэгүй ашиглагдах тул хэрэглэгчид бүх боломжийг хязгааргүй ашиглана.
+
+\subsection{Хэрэглэгчийн функциональ шаардлага}
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|c|p{3.7cm}|p{7cm}|c|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Шаардлагын нэр}} & \textcolor{white}{\textbf{Тайлбар}} & \textcolor{white}{\textbf{Тэргүүлэх}} \\ \hline
+FR-01 & Бүртгэл / Нэвтрэлт          & Имэйл + нууц үгээр бүртгүүлэх (bcrypt cost=10), JWT (24 цаг) олгох. Нууц үг $\geq$6 тэмдэгт. & Өндөр \\ \hline
+FR-02 & Нийгмийн сүлжээний нэвтрэлт & Google, Apple, Facebook хаягаар нэвтрэх. Үүсгэх / холбох логиктой. & Дундаж \\ \hline
+FR-03 & Профайл удирдах             & Нэр, имэйл, валют, аватар, нууц үг шинэчлэх. & Дундаж \\ \hline
+FR-04 & Гүйлгээ CRUD (хязгааргүй)   & Орлого/зарлагын гүйлгээг хязгааргүй нэмэх, харах, засварлах, устгах. & Өндөр \\ \hline
+FR-05 & Олон данс (хязгааргүй)      & Олон банкны (ХХБ, Голомт, Хаан банк гэх мэт) ба бэлэн мөнгө, кредит карт, хөрөнгө оруулалтын дансыг хязгааргүй нэмэх. & Өндөр \\ \hline
+FR-06 & Дансны автомат тооцоолол    & Гүйлгээ нэмэгдмэгц харьяалагдах дансны үлдэгдэл шууд шинэчлэгдэнэ. & Өндөр \\ \hline
+FR-07 & Үндсэн хяналтын самбар      & Сарын нийт орлого, зарлага, нийт үлдэгдэл, savings\%, сүүлийн 10 гүйлгээ. & Өндөр \\ \hline
+FR-08 & Сарын төсөв (хязгааргүй)    & Ангиллаар хязгааргүй сарын төсөв тогтоох, харьцуулалт хийх, явцын зурвасаар харах. & Дундаж \\ \hline
+FR-09 & AI чат (хязгааргүй)         & AI-тай хязгааргүй чатлах, олон чат сесс зэрэг ажиллуулах боломжтой. & Өндөр \\ \hline
+FR-10 & Банкны хуулгын AI шинжилгээ (хязгааргүй) & Банкны хуулгыг (PDF/Excel/CSV) хязгааргүйгээр AI-аар задлуулах, хураангуй авах, түүхийг хадгалах. & Өндөр \\ \hline
+FR-11 & Олон валютын дэмжлэг         & MNT, USD, EUR, CNY гэх мэт олон валют, автомат ханш хөрвүүлэлт. & Дундаж \\ \hline
+FR-12 & Давтагдах төлбөрийн модуль  & \texttt{daily/weekly/monthly/yearly} давтамжтай төлбөр тохируулах, идэвхжүүлэх / зогсоох, эрт сануулга. & Дундаж \\ \hline
+FR-13 & Дэлгэрэнгүй тайлан, статистик & Хугацаа дамнасан статистик (сар, улирал, жил), ангиллын задаргаа, чиг хандлагын график. & Дундаж \\ \hline
+FR-14 & PDF / Excel экспорт          & Гүйлгээ, тайлан, AI шинжилгээний үр дүнг PDF / Excel-ээр татах. & Дундаж \\ \hline
+FR-15 & Тусгай ангилал               & Хувийн хэрэгцээнд тохирсон шинэ ангилал нэмэх, дүрс / өнгө сонгох. & Бага \\ \hline
+FR-16 & Зорилт хадгаламж             & Хадгаламжийн зорилт тогтоох, гүйцэтгэлийн прогресс хянах. & Дундаж \\ \hline
+FR-17 & Push мэдэгдэл                & Expo push токен бүртгэх, төсөв хэтрэх / том дүнгийн гүйлгээ үед мэдэгдэл авах. & Дундаж \\ \hline
+FR-18 & Мэдэгдэл удирдах             & Мэдэгдлүүдийг харах, "уншсан" гэж тэмдэглэх. & Бага \\ \hline
+FR-19 & Аудит харах                  & Өөрийн үйл ажиллагааны бүртгэлийг харах (нэвтрэлт, бүртгэл, гүйлгээний түүх). & Бага \\ \hline
+FR-20 & AI чат түүхэнд хайх          & Өмнөх AI чат мессежүүдээс хайлт хийх, чухал хариултыг тэмдэглэх. & Бага \\ \hline
+\end{tabular}
+\caption{Хэрэглэгчийн функциональ шаардлага}
+\label{tab:fr-user}
+\end{table}
+
+\subsection{Админы функциональ шаардлага}
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|c|p{3.7cm}|p{7cm}|c|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Шаардлагын нэр}} & \textcolor{white}{\textbf{Тайлбар}} & \textcolor{white}{\textbf{Тэргүүлэх}} \\ \hline
+FR-S01 & Админ нэвтрэлт               & Тусдаа \texttt{admin} role-той JWT токеноор хамгаалагдсан админ самбарт нэвтрэх. & Өндөр \\ \hline
+FR-S02 & Хэрэглэгчдийн жагсаалт       & Бүх хэрэглэгчдийн нэгдсэн жагсаалтыг үзэх, шүүх, хайх. & Өндөр \\ \hline
+FR-S03 & Хэрэглэгч удирдах            & Хэрэглэгчийг идэвхгүй болгох эсвэл устгах. & Өндөр \\ \hline
+FR-S04 & Системийн статистик          & Нийт хэрэглэгчийн тоо, идэвхтэй хэрэглэгчид, AI дуудлагын тоо зэрэг KPI харах. & Өндөр \\ \hline
+FR-S05 & Аудит лог                    & Бүх хэрэглэгчдийн чухал үйлдлийн логийг (нэвтрэх, бүртгүүлэх, үүсгэх, устгах) шүүж харах. & Дундаж \\ \hline
+FR-S06 & Ангиллын seed удирдлага      & Системийн анхдагч 17 ангиллыг засварлах, шинээр нэмэх. & Бага \\ \hline
+FR-S07 & Push мэдэгдэл явуулах        & Бүх хэрэглэгчид эсвэл сонгосон бүлэгт нийтлэг push мэдэгдэл явуулах. & Бага \\ \hline
+FR-S08 & Хувь хүний нууцлал хадгалах  & Энгийн хэрэглэгчийн санхүүгийн нарийн өгөгдөл (гүйлгээний дүн, чат агуулга) админд харагдахгүй байх ёстой. & Өндөр \\ \hline
+\end{tabular}
+\caption{Админы функциональ шаардлага}
+\label{tab:fr-admin}
+\end{table}
+
+\section{Функциональ бус шаардлага}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|p{2cm}|p{3.4cm}|p{7cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Шаардлага}} & \textcolor{white}{\textbf{Шинж чанар}} & \textcolor{white}{\textbf{Тайлбар}} \\ \hline
+NFR-1 & Гүйцэтгэл              & API хариу <300мс (95-р хувь). Хяналтын самбар <500мс. \\ \hline
+NFR-2 & Аюулгүй байдал         & JWT, bcrypt, HTTPS, SQL injection-аас GORM-ээр хамгаалагдсан. \\ \hline
+NFR-3 & Хүртээмж               & Docker контейнер, \texttt{restart unless-stopped}. \\ \hline
+NFR-4 & Өргөтгөх боломж        & Төлөвгүй сервер тал, хэвтээ өргөтгөл хийх боломжтой. \\ \hline
+NFR-5 & UX                     & Харанхуй загвар, Монгол + Англи хэл. \\ \hline
+NFR-6 & Хувийн нууц            & Хэрэглэгчийн санхүүгийн өгөгдөлд зөвхөн өөрөө хандана. \\ \hline
+NFR-7 & Засвар үйлчилгээ       & Давхаргат архитектур (боловсруулагч / загвар / чиглүүлэлт). \\ \hline
+NFR-8 & Хязгаарлалт            & Зөвхөн жижиг файл ($\leq$10МБ), 3 формат дэмждэг. \\ \hline
+NFR-9 & Хэрэглэх боломжтой     & 99.5\% тасралтгүй ажиллагаа. \\ \hline
+NFR-10 & Засварлах боломж      & Кодын тестийн бүрхэлт $\geq$60\%. \\ \hline
+\end{tabular}
+\caption{Функциональ бус шаардлагууд}
+\label{tab:nfr}
+\end{table}
+
+\section{Хэрэглээний тохиолдлуудын жагсаалт}
+Системд нийт \textbf{20 хэрэглээний тохиолдол} тодорхойлогдсон бөгөөд тэдгээрийг үйл ажиллагааны төрлөөр нь дараах долоон бүлэгт ангилав. Үндсэн UC-уудын дэлгэрэнгүй тодорхойлолтыг ``Хэрэглээний тохиолдлын дэлгэрэнгүй тодорхойлолт'' хэсэгт авч үзнэ.
+
+\paragraph{Баталгаажуулалт ба бүртгэлийн хэрэглээний тохиолдлууд}
+\begin{itemize}
+    \item \textbf{UC-01}: Хэрэглэгчийн бүртгэл үүсгэх (имэйл + нууц үг)
+    \item \textbf{UC-02}: Системд нэвтрэх
+    \item \textbf{UC-03}: Нийгмийн сүлжээний нэвтрэлт (Google / Apple / Facebook)
+    \item \textbf{UC-04}: Профайл удирдах, нууц үг солих
+\end{itemize}
+
+\paragraph{Гүйлгээ ба дансны хэрэглээний тохиолдлууд}
+\begin{itemize}
+    \item \textbf{UC-05}: Гүйлгээ нэмэх / устгах (орлого, зарлага)
+    \item \textbf{UC-06}: Гүйлгээний жагсаалт шүүх, хуудаслах
+    \item \textbf{UC-07}: Данс нэмэх / удирдах (CRUD)
+    \item \textbf{UC-08}: Дансны үлдэгдлийг бодит цагт харах
+\end{itemize}
+
+\paragraph{Төсөв ба давтагдах төлбөрийн хэрэглээний тохиолдлууд}
+\begin{itemize}
+    \item \textbf{UC-09}: Сарын төсөв тогтоох, ангиллын лимит
+    \item \textbf{UC-10}: Төсвийн прогресс ба хэтрэлтийн анхааруулга
+    \item \textbf{UC-11}: Давтагдах төлбөр тохируулах
+\end{itemize}
+
+\paragraph{AI-д суурилсан хэрэглээний тохиолдлууд}
+\begin{itemize}
+    \item \textbf{UC-12}: AI чатаар асуулт асуух (контекст: 30 хоног)
+    \item \textbf{UC-13}: Олон AI чат сесс ажиллуулах
+    \item \textbf{UC-14}: Банкны хуулга байршуулах ба AI шинжилгээ хийх
+    \item \textbf{UC-15}: AI шинжилгээний түүх харах
+\end{itemize}
+
+\paragraph{Мэдэгдлийн хэрэглээний тохиолдлууд}
+\begin{itemize}
+    \item \textbf{UC-16}: Push мэдэгдэл хүлээн авах, "уншсан" гэж тэмдэглэх
+    \item \textbf{UC-17}: Өдөр тутмын автомат AI дүгнэлт хүргэх
+\end{itemize}
+
+\paragraph{Тайлан, экспортын хэрэглээний тохиолдлууд}
+\begin{itemize}
+    \item \textbf{UC-18}: Тайлан PDF / Excel-ээр экспортлох
+\end{itemize}
+
+\paragraph{Админы хэрэглээний тохиолдлууд}
+\begin{itemize}
+    \item \textbf{UC-19}: Хэрэглэгч удирдах (жагсаалт, идэвхгүй болгох, устгах)
+    \item \textbf{UC-20}: Системийн статистик хяналт
+\end{itemize}
+
+\section{Системийн контекст диаграм}
+Системийн контекст диаграм нь FinTrack-ийг гадаад орчинтойгоо --- хэрэглэгч, гадаад үйлчилгээнүүд, хадгалалтын систем --- ямар интерфейсээр харилцдагийг харуулна. Энэ нь дизайн ба интеграцийн хүрээг тодорхойлоход чухал.
+
+\begin{figure}[ht]
+\centering
+\resizebox{0.95\textwidth}{!}{%
+\begin{tikzpicture}[
+    >={Stealth[length=2.5mm]},
+    core/.style={ellipse, draw=darknavy, fill=accentblue!75, text=white, font=\bfseries\small, align=center, very thick, minimum width=4.6cm, minimum height=2.4cm},
+    actor/.style={rectangle, rounded corners=4pt, draw=darknavy, fill=accentyellow!40, very thick, align=center, font=\footnotesize, minimum width=2.7cm, minimum height=1.0cm},
+    ai/.style={rectangle, rounded corners=4pt, draw=darknavy, fill=accentpurple!30, very thick, align=center, font=\footnotesize, minimum width=2.8cm, minimum height=1.0cm},
+    storage/.style={ellipse, draw=darknavy, fill=accentorange!40, very thick, align=center, font=\footnotesize, minimum width=2.8cm, minimum height=1.0cm},
+    db/.style={ellipse, draw=darknavy, fill=accentred!30, very thick, align=center, font=\footnotesize, minimum width=2.8cm, minimum height=1.0cm},
+    push/.style={rectangle, rounded corners=4pt, draw=darknavy, fill=accentgreen!30, very thick, align=center, font=\footnotesize, minimum width=2.8cm, minimum height=1.0cm},
+    arrow/.style={->, semithick, draw=darknavy!85},
+    label/.style={font=\scriptsize\itshape, fill=white, inner sep=1pt}
+]
+
+% Central system
+\node[core] (sys) at (0,0) {\textbf{FinTrack} \\ Go + Gin + GORM \\ \scriptsize 45 REST API цэг};
+
+% Actors (left side)
+\node[actor] (user)   at (-7,  2.5) {Хэрэглэгч};
+\node[actor] (admin)  at (-7, -2.5) {Админ};
+
+% AI services (right side)
+\node[ai] (gemini)    at (7,  2.5) {Gemini 2.5 Flash \\ \scriptsize (Үндсэн LLM)};
+\node[ai] (openrouter)at (7,  0.5) {OpenRouter \\ \scriptsize (Нөөц LLM)};
+\node[ai] (parser)    at (7, -1.5) {Python FastAPI \\ \scriptsize задлагч};
+
+% Storage (top)
+\node[db]     (pg)    at (-3, 4)   {PostgreSQL 16 \\ \scriptsize 11 хүснэгт};
+\node[storage](fs)    at ( 3, 4)   {Локал файл систем \\ \scriptsize \texttt{./uploads}};
+
+% Push / external (bottom)
+\node[push]   (expo)  at (-3, -4)  {Expo Push \\ \scriptsize Сервис};
+\node[push]   (oauth) at ( 3, -4)  {Google / Apple / \\ Facebook OAuth};
+
+% --- Actor → system ---
+\draw[arrow] (user.east)  -- node[label, above, sloped]{HTTPS + JWT} (sys.west);
+\draw[arrow] (admin.east) -- node[label, below, sloped]{Admin API} (sys.south west);
+
+% --- System → AI ---
+\draw[arrow] (sys.east) to[bend left=8]  node[label, above, sloped]{prompt + context} (gemini.west);
+\draw[arrow] (sys.east) -- node[label, above, sloped]{нөөц шилжилт} (openrouter.west);
+\draw[arrow] (sys.east) to[bend right=8] node[label, below, sloped]{PDF / XLSX} (parser.west);
+
+% --- System → Storage ---
+\draw[arrow] (sys.north) -- node[label, left]{SQL (GORM)} (pg.south);
+\draw[arrow] (sys.north) -- node[label, right]{файл байршуулах} (fs.south);
+
+% --- System → Push / external ---
+\draw[arrow] (sys.south) -- node[label, left]{Expo token} (expo.north);
+\draw[arrow] (sys.south) -- node[label, right]{OAuth callback} (oauth.north);
+
+\end{tikzpicture}
+}
+\caption{Context Diagram (Контекст диаграм) --- FinTrack систем}
+\label{fig:system-context}
+\end{figure}
+
+Энэхүү диаграм нь гадаад орчинтойгоо холбогдох \textbf{2 оролцогч} (хэрэглэгч, админ), \textbf{3 AI үйлчилгээ} (Gemini --- үндсэн, OpenRouter --- нөөц, Python задлагч), \textbf{2 хадгалалтын систем} (PostgreSQL, локал файл систем), мөн \textbf{2 гадаад мэдэгдэл / нэвтрэлтийн үйлчилгээ} (Expo Push, OAuth) гэсэн 9 интерфейсээс бүрдэхийг харуулна.
+
+\section{Хэрэглээний тохиолдлын диаграм}
+Системийн хэрэглээний тохиолдлын диаграммыг доор үзүүлэв. Энэ нь оролцогчид (actor) болон тэдгээрийн гүйцэтгэх боломжтой үйлдлүүдийн уялдааг харуулна. Хэрэглээний тохиолдлуудыг үүрэг зориулалтын дагуу гурван бүлэгт хуваан өнгөөр ялгасан: \textcolor{accentblue!80!black}{\textbf{Нэвтрэлт}}, \textcolor{accentgreen!60!black}{\textbf{Санхүү}} ба \textcolor{accentpurple!80!black}{\textbf{AI / Мэдэгдэл}}.
+
+\begin{figure}[ht]
+\centering
+\resizebox{0.95\textwidth}{!}{%
+\begin{tikzpicture}[
+    >={Stealth[length=2.2mm]},
+    stickman/.style={draw=darknavy, very thick, line cap=round, line join=round},
+    actorlbl/.style={font=\bfseries\small, align=center, text=darknavy},
+    usecase/.style={draw=darknavy, ellipse, very thick, minimum width=3.1cm, minimum height=1.0cm, align=center, font=\small},
+    auth/.style={usecase, fill=accentblue!22},
+    fin/.style={usecase, fill=accentgreen!22},
+    ai/.style={usecase, fill=accentpurple!22},
+    adm/.style={usecase, fill=accentorange!28},
+    groupbox/.style={draw=darknavy!55, dashed, rounded corners=6pt, thick, inner sep=0.25cm},
+    sysbox/.style={draw=darknavy, rounded corners=10pt, very thick, inner sep=0.7cm},
+    syslbl/.style={fill=darknavy, text=white, font=\bfseries\small, rounded corners=3pt, inner sep=4pt},
+    arrow/.style={-, semithick, draw=darknavy!75},
+    incl/.style={->, thick, dashed, draw=accentpurple!80, font=\footnotesize\itshape}
+]
+
+% ---------- Actors (stick figures) ----------
+\def\stick#1#2#3{%
+    \begin{scope}[shift={(#1)}]
+        \draw[stickman] (0,0.55) circle (0.22);                 % head
+        \draw[stickman] (0,0.33) -- (0,-0.35);                   % body
+        \draw[stickman] (-0.35,0.10) -- (0.35,0.10);             % arms
+        \draw[stickman] (0,-0.35) -- (-0.30,-0.85);              % left leg
+        \draw[stickman] (0,-0.35) -- (0.30,-0.85);               % right leg
+        \node[actorlbl, anchor=#2, yshift=-0.1cm] at (0,-0.95) {#3};
+    \end{scope}}
+
+\stick{-0.5,  1.4}{north}{Хэрэглэгч}
+\stick{-0.5, -4.7}{north}{Админ}
+\stick{15.6, 1.4}{north}{AI}
+
+% ---------- Use cases — three logical columns ----------
+% Col 1: Auth
+\node[auth] (reg)   at (3.7, 4.0)   {Бүртгүүлэх};
+\node[auth] (login) at (3.7, 2.4)   {Нэвтрэх};
+\node[auth] (prof)  at (3.7, 0.8)   {Профайл удирдах};
+
+% Col 2: Finance
+\node[fin]  (imp)   at (7.7, 4.0)   {Хуулга оруулах};
+\node[fin]  (inc)   at (7.7, 2.4)   {Орлого бүртгэх};
+\node[fin]  (exp)   at (7.7, 0.8)   {Зарлага бүртгэх};
+\node[fin]  (bud)   at (7.7, -0.8)  {Төсөв тохируулах};
+\node[fin]  (bal)   at (7.7, -2.4)  {Үлдэгдэл харах};
+
+% Col 3: AI
+\node[ai]   (anal)  at (11.7, 4.0)  {Анализ хийх};
+\node[ai]   (rec)   at (11.7, 2.4)  {Зөвлөмж гаргах};
+\node[ai]   (trend) at (11.7, 0.8)  {Чиг хандлага};
+\node[ai]   (chat)  at (11.7, -0.8) {AI чат};
+\node[ai]   (notif) at (11.7, -2.4) {Push мэдэгдэл};
+
+% Admin row (bottom)
+\node[adm]  (umgmt) at (5.5, -5.0)  {Хэрэглэгч\\ удирдах};
+\node[adm]  (stat)  at (9.5, -5.0)  {Статистик\\ хяналт};
+\node[adm]  (audit) at (13.0, -5.0) {Аудит лог};
+
+% ---------- Group bounding boxes with module labels ----------
+\node[groupbox, fit={(reg) (login) (prof)}] (gauth) {};
+\node[anchor=south, font=\footnotesize\bfseries, text=accentblue!70!black] at (gauth.north) {Нэвтрэлт};
+
+\node[groupbox, fit={(imp) (inc) (exp) (bud) (bal)}] (gfin) {};
+\node[anchor=south, font=\footnotesize\bfseries, text=accentgreen!55!black] at (gfin.north) {Санхүү};
+
+\node[groupbox, fit={(anal) (rec) (trend) (chat) (notif)}] (gai) {};
+\node[anchor=south, font=\footnotesize\bfseries, text=accentpurple!70!black] at (gai.north) {AI \& Мэдэгдэл};
+
+\node[groupbox, fit={(umgmt) (stat) (audit)}] (gadm) {};
+\node[anchor=north, font=\footnotesize\bfseries, text=accentorange!70!black] at (gadm.south) {Админ модуль};
+
+% ---------- System boundary ----------
+\node[sysbox, fit={(gauth) (gfin) (gai) (gadm)}] (sys) {};
+\node[syslbl, anchor=north] at ([yshift=-0.2cm]sys.north) {«system» FinTrack};
+
+% ---------- User → Auth ----------
+\draw[arrow] (-0.5, 1.4) -- (reg.west);
+\draw[arrow] (-0.5, 1.4) -- (login.west);
+\draw[arrow] (-0.5, 1.4) -- (prof.west);
+
+% ---------- User → Finance (через зазор между Auth ↔ Finance) ----------
+\draw[arrow] (-0.5, 1.4) to[out=-15, in=180] (imp.west);
+\draw[arrow] (-0.5, 1.4) to[out=-30, in=180] (inc.west);
+\draw[arrow] (-0.5, 1.4) to[out=-45, in=180] (exp.west);
+\draw[arrow] (-0.5, 1.4) to[out=-60, in=180] (bud.west);
+\draw[arrow] (-0.5, 1.4) to[out=-70, in=180] (bal.west);
+
+% ---------- User → AI чат ----------
+\draw[arrow] (-0.5, 1.4) to[out=-78, in=200] (chat.west);
+
+% ---------- Admin → Admin use cases ----------
+\draw[arrow] (-0.5, -4.7) -- (umgmt.west);
+\draw[arrow] (-0.5, -4.7) to[out=-10, in=180] (stat.west);
+\draw[arrow] (-0.5, -4.7) to[out=-25, in=180] (audit.west);
+
+% ---------- AI Engine → AI ----------
+\draw[arrow] (15.6, 1.4) to[out=190, in=10]  (anal.east);
+\draw[arrow] (15.6, 1.4) to[out=180, in=10]  (rec.east);
+\draw[arrow] (15.6, 1.4) to[out=170, in=10]  (trend.east);
+\draw[arrow] (15.6, 1.4) to[out=200, in=20]  (chat.east);
+\draw[arrow] (15.6, 1.4) to[out=215, in=20]  (notif.east);
+
+% ---------- «include» relationships ----------
+\draw[incl] (anal.west) -- node[above, font=\scriptsize\itshape]{«include»} (imp.east);
+\draw[incl] (rec.north) -- node[right, font=\scriptsize\itshape, xshift=1mm]{«include»} (anal.south);
+\draw[incl] (notif.north west) to[bend left=18] node[left, font=\scriptsize\itshape, xshift=-1mm]{«include»} (rec.south west);
+
+\end{tikzpicture}
+}
+\caption{Use Case Diagram (Хэрэглээний тохиолдлын диаграм) --- FinTrack систем, 2 оролцогч, 4 модуль}
+\label{fig:usecase}
+\end{figure}
+
+\section{Системийн ерөнхий ажиллагааны диаграм}
+Дараах диаграмм нь системийн ерөнхий ажиллагааг харуулна. Хэрэглэгч системд хандах мөчөөс эхлээд AI-аас зөвлөмж авах хүртэлх бүх алхмыг харуулсан.
+
+\begin{figure}[ht]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    box/.style={rectangle, rounded corners=5pt, draw=darknavy, very thick, minimum width=2.6cm, minimum height=1.1cm, align=center, font=\footnotesize},
+    user/.style={box, fill=accentteal!40, minimum width=3cm},
+    ui/.style={box, fill=accentblue!25},
+    api/.style={box, fill=accentgreen!25},
+    db/.style={box, fill=accentorange!30},
+    aibox/.style={box, fill=accentpurple!25},
+    parser/.style={box, fill=accentyellow!40},
+    push/.style={box, fill=accentred!25},
+    arrow/.style={-{Stealth[length=3mm]}, very thick, draw=darknavy!85},
+    arrowret/.style={-{Stealth[length=3mm]}, very thick, draw=accentgreen!80, dashed},
+    layerlabel/.style={font=\scriptsize\bfseries\itshape, color=darknavy!70, anchor=west}
+]
+
+% Layer labels (left side)
+\node[layerlabel] at (-7.5, 0)   {1. Хэрэглэгч};
+\node[layerlabel] at (-7.5, -2)  {2. Гар утасны UI};
+\node[layerlabel] at (-7.5, -4.5){3. REST API};
+\node[layerlabel] at (-7.5, -7)  {4. Хадгалалт / Гадаад};
+\node[layerlabel] at (-7.5, -9.3){5. Push мэдэгдэл};
+
+% Layer 1: User (centered)
+\node[user] (u) at (0, 0) {Хэрэглэгч};
+
+% Layer 2: Mobile UI (5 screens)
+\node[ui]   (login)  at (-6, -2)   {Нэвтрэх /\\Бүртгүүлэх};
+\node[ui]   (home)   at (-3, -2)   {Хяналтын\\самбар};
+\node[ui]   (tx)     at (0, -2)    {Гүйлгээ};
+\node[ui]   (chatui) at (3, -2)    {AI чат};
+\node[ui]   (impui)  at (6, -2)    {Хуулга\\оруулах};
+
+% Layer 3: API (4 endpoints, aligned with UI columns)
+\node[api] (auth)    at (-6, -4.5){Баталгаажуулах API\\(JWT)};
+\node[api] (txapi)   at (-1.5, -4.5){Tx API};
+\node[api] (chatapi) at (3, -4.5) {AI Chat API};
+\node[api] (analapi) at (6, -4.5) {AI Analysis\\API};
+
+% Layer 4: Storage / External
+\node[db]     (dbnode) at (-4.5, -7) {PostgreSQL};
+\node[parser] (psr)    at (0, -7)    {Хуулга\\задлагч};
+\node[aibox]  (llm)    at (4.5, -7)  {AI / LLM\\сервис};
+
+% Layer 5: Notifications
+\node[push] (sched) at (-2, -9.3) {Өдөр тутмын\\хуваарьчлагч};
+\node[push] (expo)  at (3.5, -9.3){Expo Push};
+
+% User -> UI (downward)
+\foreach \dest in {login, home, tx, chatui, impui}
+    \draw[arrow] (u.south) -- (\dest.north);
+
+% UI -> API (downward)
+\draw[arrow] (login.south)  -- (auth.north);
+\draw[arrow] (home.south)   -- (txapi.north);
+\draw[arrow] (tx.south)     -- (txapi.north);
+\draw[arrow] (chatui.south) -- (chatapi.north);
+\draw[arrow] (impui.south)  -- (analapi.north);
+
+% API -> DB / external (downward, orthogonal where possible)
+\draw[arrow] (auth.south)    |- (dbnode.west);
+\draw[arrow] (txapi.south)   -- (dbnode.north);
+\draw[arrow] (chatapi.south) -- (dbnode.north east);
+\draw[arrow] (chatapi.south) -- (llm.north);
+\draw[arrow] (analapi.south) -- (psr.north east);
+\draw[arrow] (analapi.south) -- (llm.north east);
+\draw[arrow] (analapi.south west) |- (dbnode.east);
+
+% Scheduler flow
+\draw[arrow] (dbnode.south) |- (sched.west);
+\draw[arrow] (sched.east)   -- (expo.west);
+\draw[arrow] (sched.north)  to[bend right=15] (llm.south);
+\draw[arrowret] (expo.east) -- ++(2, 0) |- (u.east);
+
+\end{tikzpicture}
+}
+\caption{Activity Diagram (Үйл ажиллагааны диаграм) --- системийн ерөнхий урсгал}
+\label{fig:system-overview}
+\end{figure}
+
+\subsection{Ерөнхий ажиллагааны тайлбар}
+Системийн ажиллагаа дараах 5 давхрагаас бүрдэнэ:
+\begin{enumerate}
+    \item \textbf{Хэрэглэгч давхрага.} Гар утасны төхөөрөмжөөс системд хандана.
+    \item \textbf{UI давхрага.} React Native-ийн 17 дэлгэц (нэвтрэх, хяналтын самбар, AI чат, хуулга оруулах гэх мэт).
+    \item \textbf{API давхарга.} Go + Gin сервер 45 API цэгээр JWT дундын давхаргатай хүсэлтийг хүлээн авна.
+    \item \textbf{Хадгалалт ба гадаад үйлчилгээ.} PostgreSQL мэдээлэл хадгална, задлагч үйлчилгээ банкны хуулгыг боловсруулна, AI / LLM үйлчилгээ хариулт өгнө.
+    \item \textbf{Мэдэгдлийн давхрага.} Өдөр бүр ажилладаг хуваарьчлагчаас үүссэн дүгнэлтийг Expo Push-ээр хэрэглэгчид хүргэнэ.
+\end{enumerate}
+
+\section{Хэрэглээний тохиолдлын диаграмын тодорхойлолт}
+Энэ хэсэгт хэрэглээний тохиолдол бүрийг хэрэглэгчийн харах өнцгөөс дэлгэрэнгүй тайлбарлав.
+
+\subsection{UC-01. Бүртгүүлэх}
+\begin{itemize}
+    \item \textbf{Оролцогч:} Хэрэглэгч
+    \item \textbf{Урьдчилсан нөхцөл:} Хэрэглэгч интернэтэд холбогдсон, бүртгэлгүй.
+    \item \textbf{Үндсэн алхам:}
+    \begin{enumerate}
+        \item Хэрэглэгч нэр, имэйл, нууц үг оруулна.
+        \item Систем имэйл давтагдаагүй эсэхийг шалгана.
+        \item Bcrypt-ээр нууц үгийг хэшлэнэ.
+        \item Хэрэглэгч бүртгэгдэж, анхдагч данс ("Main Account") үүснэ.
+        \item JWT буцаана.
+    \end{enumerate}
+    \item \textbf{Үндсэн нөхцөл:} Имэйл давхардсан → \texttt{409 Conflict}.
+\end{itemize}
+
+\subsection{UC-02. Нэвтрэх}
+\begin{itemize}
+    \item \textbf{Оролцогч:} Хэрэглэгч
+    \item \textbf{Алхам:} Имэйл + нууц үг → bcrypt харьцуулалт → JWT (24 цаг).
+    \item \textbf{Үндсэн нөхцөл:} Нууц үг буруу → \texttt{401 Unauthorized}.
+\end{itemize}
+
+\subsection{UC-03. Гүйлгээ нэмэх}
+\begin{itemize}
+    \item \textbf{Оролцогч:} Хэрэглэгч
+    \item \textbf{Урьдчилсан нөхцөл:} Нэвтэрсэн, дор хаяж нэг данстай.
+    \item \textbf{Алхам:}
+    \begin{enumerate}
+        \item Хэрэглэгч дүн, ангилал, данс, огноо, төрөл (income/expense), тайлбар оруулна.
+        \item Систем оролтыг баталгаажуулна.
+        \item Өгөгдлийн санд Transaction бичлэг нэмнэ.
+        \item Дансны үлдэгдэл автоматаар шинэчлэгдэнэ.
+        \item Үйлдлийн бүртгэлд тэмдэглэгдэнэ.
+    \end{enumerate}
+\end{itemize}
+
+\subsection{UC-04. Банкны хуулга оруулах ба AI шинжилгээ}
+\begin{itemize}
+    \item \textbf{Оролцогч:} Хэрэглэгч, AI
+    \item \textbf{Алхам:}
+    \begin{enumerate}
+        \item Хэрэглэгч PDF/Excel/CSV файл байршуулна.
+        \item Сервер файлыг \texttt{./uploads/statements/} дотор хадгална.
+        \item Задлагч ажиллаж \texttt{ParsedStatement} бүтэц гаргана.
+        \item Ангиллын задаргаа автоматаар тооцогдоно.
+        \item AI / LLM үйлчилгээ рүү хураангуй ба зөвлөмжийн хүсэлт явна.
+        \item Бүх үр дүн (\texttt{AIAnalysis}) өгөгдлийн санд хадгалагдана.
+        \item Хэрэглэгч талд график, тоонууд, зөвлөмжүүд харагдана.
+    \end{enumerate}
+    \item \textbf{Үндсэн нөхцөл:} AI API түлхүүр байхгүй бол дүрэмд суурилсан нөөц хураангуй ашиглана.
+\end{itemize}
+
+\subsection{UC-05. AI чат}
+\begin{itemize}
+    \item \textbf{Оролцогч:} Хэрэглэгч, AI
+    \item \textbf{Алхам:}
+    \begin{enumerate}
+        \item Хэрэглэгч асуулт бичнэ.
+        \item Систем DB-ээс сүүлийн 30 хоногийн контекст цуглуулна.
+        \item Өмнөх 20 мессежийг түүх болгон оруулна.
+        \item AI хариулт буцаана.
+        \item Хариултыг \texttt{AIMessage} болгон хадгална.
+    \end{enumerate}
+\end{itemize}
+
+\subsection{UC-06. Сарын төсөв тогтоох}
+\begin{itemize}
+    \item \textbf{Оролцогч:} Хэрэглэгч
+    \item \textbf{Алхам:} Ангилал бүрд сарын лимит → өгөгдлийн санд хадгалагдана. Бодит зарлага тооцогдоно.
+\end{itemize}
+
+\subsection{UC-07. Push мэдэгдэл}
+\begin{itemize}
+    \item \textbf{Оролцогч:} Хэрэглэгч, AI, Push үйлчилгээ
+    \item \textbf{Алхам:} Өдөр бүр хуваарьчлагч → AI дүгнэлт үүсгэх → Expo Push илгээх.
+\end{itemize}
+
+\section{Шаардлагуудын тэргүүлэх зэрэг}
+Бүх шаардлагуудыг MoSCoW аргачлалаар (Must, Should, Could, Won't) ангилав. Систем нь үнэгүй ашиглагдах тул бүх функциональ боломжууд хэрэглэгчдэд адил нээлттэй. Админд зориулсан шаардлагуудыг тусад нь бүлэглэв.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|c|p{7.5cm}|c|c|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{ID}} & \textcolor{white}{\textbf{Шаардлага}} & \textcolor{white}{\textbf{Хэрэглэгч}} & \textcolor{white}{\textbf{Тэргүүлэх зэрэг}} \\ \hline
+FR-01 & Бүртгэл / Нэвтрэлт                  & Хэрэглэгч & Must   \\ \hline
+FR-02 & Нийгмийн сүлжээний нэвтрэлт          & Хэрэглэгч & Should \\ \hline
+FR-03 & Гүйлгээний CRUD                      & Хэрэглэгч & Must   \\ \hline
+FR-04 & Олон данс                            & Хэрэглэгч & Must   \\ \hline
+FR-05 & Үндсэн хяналтын самбар               & Хэрэглэгч & Must   \\ \hline
+FR-06 & Сарын төсөв                          & Хэрэглэгч & Should \\ \hline
+FR-07 & AI чат                               & Хэрэглэгч & Must   \\ \hline
+FR-08 & Банкны хуулгын AI шинжилгээ          & Хэрэглэгч & Must   \\ \hline
+FR-09 & Push мэдэгдэл                        & Хэрэглэгч & Should \\ \hline
+FR-10 & Олон валют                           & Хэрэглэгч & Should \\ \hline
+FR-11 & Давтагдах төлбөр                     & Хэрэглэгч & Should \\ \hline
+FR-12 & Дэлгэрэнгүй тайлан, статистик        & Хэрэглэгч & Should \\ \hline
+FR-13 & PDF / Excel экспорт                  & Хэрэглэгч & Should \\ \hline
+FR-14 & Тусгай ангилал                       & Хэрэглэгч & Could  \\ \hline
+FR-15 & Зорилт хадгаламж                     & Хэрэглэгч & Should \\ \hline
+FR-16 & Аудит харах                          & Хэрэглэгч & Could  \\ \hline
+FR-S02 & Хэрэглэгчдийн жагсаалт               & Админ      & Must   \\ \hline
+FR-S03 & Хэрэглэгч идэвхгүй болгох / устгах   & Админ      & Must   \\ \hline
+FR-S04 & Системийн статистик                  & Админ      & Must   \\ \hline
+FR-S05 & Аудит лог                            & Админ      & Should \\ \hline
+FR-S07 & Нийт хэрэглэгчид илгээх push мэдэгдэл & Админ      & Could  \\ \hline
+\end{tabular}
+\caption{Шаардлагуудын MoSCoW ангилал}
+\label{tab:moscow}
+\end{table}
+
+\section{Системийн хязгаарлалт}
+Дипломын ажлын хүрээнд дараах хязгаарлалтыг тодорхойлсон:
+\begin{itemize}
+    \item Систем зөвхөн нэг хэрэглэгчийн өнцгөөс ажиллана (гэр бүлийн хамтын данс хараахан байхгүй),
+    \item Open Banking API-аар банкны өгөгдөл шууд татах функц байхгүй (хэрэглэгч өөрөө хуулга байршуулна),
+    \item Хөрөнгө оруулалтын багцын хяналт хязгаарлагдмал,
+    \item AI зөвлөмжийг шууд гүйцэтгэх (автомат төлбөр хийх) боломжгүй, зөвхөн санал болгох түвшинд,
+    \item Зөвхөн iOS, Android-д зориулагдсан, вэб хувилбар одоогоор байхгүй.
+\end{itemize}
+
+\textbf{Дүгнэлт.} Энэ бүлэгт системийн зорилго болон 9 үндсэн модуль, \textbf{14 хэрэглэгчийн шаардлага} (UR), \textbf{2 төрлийн оролцогч} (энгийн хэрэглэгч, админ), функциональ болон функциональ бус шаардлагууд, \textbf{хэрэглээний тохиолдлын} жагсаалт, системийн контекст диаграм, хэрэглээний тохиолдлын диаграм, системийн ерөнхий ажиллагааны диаграм болон үндсэн хэрэглээний тохиолдлуудын дэлгэрэнгүй тодорхойлолтыг авч үзлээ. Систем нь үнэгүй ашиглагдах тул хэрэглэгчийн тарифын ялгаа, эрхийн хязгаарлалт байхгүй. Тогтоосон шаардлагууд нь MoSCoW аргачлалаар тэргүүлэх зэрэгтэй болсон бөгөөд Must зэрэгтэй шаардлагууд нь дипломын ажлын хүрээнд бүрэн хэрэгжих ёстой цөм функцууд юм. Дараагийн бүлэгт энэ шаардлагуудыг хэрхэн системд хэрэгжүүлснийг архитектур, өгөгдлийн сан, API, AI урсгал, хэрэглэгч талын дэлгэц болон туршилтын үр дүн зэрэг талаас нь дэлгэрэнгүй харуулна.

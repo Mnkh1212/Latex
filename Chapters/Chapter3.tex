@@ -1,0 +1,943 @@
+﻿% Бүлэг 3
+
+\chapter{Системийн зохиомж ба хэрэгжүүлэлт}
+\label{Chapter3}
+\pagecolor{white}
+
+%-------------------------------------------------------------------------------
+
+\section{Системийн архитектур}
+\textbf{FinTrack} систем нь сонгодог \textbf{3-tier} архитектурын дээр AI давхаргыг нэмж, дөрвөн давхаргат архитектураар бүтсэн \cite{cleanarch, ddd}. Энэ нь дараах ач холбогдолтой:
+\begin{itemize}
+    \item \textbf{Хариуцлагын тусгаарлалт.} Дэлгэц, бизнесийн логик, өгөгдөл хадгалалт, AI тус бүр өөрийн модультай.
+    \item \textbf{Засвар үйлчилгээ хялбар.} Нэг давхаргыг өөрчилсөн нь нөгөөд бараг нөлөөлөхгүй.
+    \item \textbf{Тестлэх боломжтой.} Давхарга бүрд нэгж тест бичиж болно.
+    \item \textbf{Өргөтгөх боломж.} Сервер талыг хувилж олон нэгж дээр зэрэгцэн ажиллуулах боломжтой.
+\end{itemize}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    box/.style={rectangle, rounded corners, draw=darknavy, very thick, minimum width=12cm, minimum height=1.4cm, align=center, font=\footnotesize},
+    presentation/.style={box, fill=accentblue!20},
+    application/.style={box, fill=accentgreen!20},
+    data/.style={box, fill=accentorange!20, minimum width=5.7cm},
+    aiext/.style={box, fill=accentpurple!20, minimum width=5.7cm},
+    arrow/.style={->, very thick, draw=darknavy}
+]
+\node[presentation] (p) at (0, 6) {%
+    \textbf{Танилцуулах давхарга (Presentation)} \\
+    \scriptsize React Native + Expo SDK 55 + TypeScript + NativeWind v4 \\
+    \scriptsize 17 дэлгэц $\cdot$ React Navigation $\cdot$ AuthContext
+};
+\node[application] (a) at (0, 3.5) {%
+    \textbf{Бизнес логикийн давхарга (Application)} \\
+    \scriptsize Go 1.25 + Gin + JWT дундын давхарга $\cdot$ 12 боловсруулагч файл $\cdot$ 45 REST API цэг \\
+    \scriptsize Үйлдлийн бүртгэл $\cdot$ Expo push дамжуулагч $\cdot$ Өдөр тутмын AI хуваарьчлагч
+};
+\node[data] (d) at (-3.2, 1) {%
+    \textbf{Өгөгдлийн давхарга (Data)} \\
+    \scriptsize PostgreSQL 16 (port 5433) \\
+    \scriptsize GORM v1.25.9 $\cdot$ 11 хүснэгт
+};
+\node[aiext] (ext) at (3.2, 1) {%
+    \textbf{AI / гадаад үйлчилгээний давхарга} \\
+    \scriptsize Gemini 2.5 / OpenRouter (нөөц) \\
+    \scriptsize FastAPI хуулга задлагч $\cdot$ Expo Push
+};
+
+\draw[arrow] (p) -- node[right, font=\scriptsize]{HTTPS REST + JWT} (a);
+\draw[arrow] (a.south) -- ++(0, -0.7) -| (d.north);
+\draw[arrow] (a.south) -- ++(0, -0.7) -| (ext.north);
+\end{tikzpicture}
+\caption{4-давхаргат архитектур}
+\label{fig:arch-layers}
+\end{figure}
+
+\subsection{Сервер талын кодын зохион байгуулалт}
+Сервер тал нь Go-ын давхаргат зохион байгуулалтаар (\texttt{internal/} pattern) бүтсэн \cite{cleancode, dpo}:
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|p{4.2cm}|p{8cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Хавтас}} & \textcolor{white}{\textbf{Зориулалт}} \\ \hline
+\texttt{cmd/server/main.go}        & Гарааны цэг. Тохиргоо ачаалах, өгөгдлийн санд холбогдох, чиглүүлэлт бүртгэх, хуваарьчлагч эхлүүлэх. \\ \hline
+\texttt{internal/config}           & Орчны хувьсагч уншигч (\texttt{godotenv}). \\ \hline
+\texttt{internal/database}         & PostgreSQL холболт, автомат миграц, эх өгөгдөл. \\ \hline
+\texttt{internal/middleware}       & JWT баталгаажуулалт, CORS. \\ \hline
+\texttt{internal/handlers}         & 11 файл --- боловсруулагчийн логик. \\ \hline
+\texttt{internal/models}           & 9 GORM загвар + DTO. \\ \hline
+\texttt{internal/routes}           & Чиглүүлэлт бүртгэгч. \\ \hline
+\end{tabular}
+\caption{Сервер талын кодын зохион байгуулалт}
+\label{tab:backend-layout}
+\end{table}
+
+\subsection{Боловсруулагчдын жагсаалт}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|p{3.5cm}|c|p{6.5cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Файл}} & \textcolor{white}{\textbf{Мөр}} & \textcolor{white}{\textbf{Үндсэн зорилго}} \\ \hline
+\texttt{auth.go}            & 316  & Бүртгэл, нэвтрэлт, JWT, профайл, нийгмийн сүлжээний нэвтрэлт. \\ \hline
+\texttt{transaction.go}     & 223  & Гүйлгээ CRUD, үлдэгдлийн автомат шинэчлэлт. \\ \hline
+\texttt{dashboard.go}       & 288  & Хяналтын самбарын үзүүлэлт, зарлагын нэгтгэл, статистик. \\ \hline
+\texttt{budget.go}          & 138  & Сарын төсөв CRUD. \\ \hline
+\texttt{account.go}         & 184  & Данс CRUD, ангиллын CRUD. \\ \hline
+\texttt{ai\_chat.go}        & 548  & AI чат сесс, мессеж, LLM дуудалт, контекст бэлтгэл. \\ \hline
+\texttt{ai\_provider.go}    & 388  & Олон нийлүүлэгчийн солилт (Gemini $\leftrightarrow$ OpenRouter), нөөц шилжилтийн логик, үнэгүй загварын жагсаалт автомат татах. \\ \hline
+\texttt{ai\_analysis.go}    & 1{,}425 & Хуулга байршуулах, задлан унших, AI хураангуй гаргах. Хамгийн том боловсруулагч. \\ \hline
+\texttt{import.go}          & 197  & Хуучин текст-only хувилбар. \\ \hline
+\texttt{notification.go}    & 279  & Push мэдэгдлийн токен, өдөр тутмын автомат хуваарьчлагч. \\ \hline
+\texttt{scheduled\_payment.go} & 103 & Давтагдах төлбөр CRUD, идэвх солих. \\ \hline
+\texttt{activity\_log.go}   & 88   & Аудит лог жагсаалт ба нэгтгэл. \\ \hline
+\end{tabular}
+\caption{Сервер талын боловсруулагчдын тойм (нийт $\approx$4{,}900 мөр Go код)}
+\label{tab:handlers}
+\end{table}
+
+\subsection{Үндсэн загвар ба харилцааны (Class) диаграм}
+Сервер талын \texttt{internal/models} пакет дахь үндсэн ангийн (struct) бүтэц, тэдгээрийн талбар, метод болон хоорондын харилцааг доорх ангийн диаграмаар үзүүлэв. Энэ нь ER загвартай ойролцоо боловч програм хангамжийн түвшинд буюу GORM-ийн загварын давхаргыг тусгасан.
+
+\begin{figure}[ht]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    >={Stealth[length=2.2mm]},
+    class/.style={draw=darknavy, fill=accentblue!15, very thick, rectangle, align=left, inner sep=4pt, font=\scriptsize\ttfamily, text width=3.7cm},
+    classfin/.style={class, fill=accentgreen!18},
+    classai/.style={class, fill=accentpurple!18},
+    classaud/.style={class, fill=accentorange!22},
+    assoc/.style={->, semithick, draw=darknavy!85},
+    compose/.style={{Diamond[length=3.2mm,width=2.4mm]}-{Stealth[length=2.2mm]}, semithick, draw=darknavy!85},
+    card/.style={font=\tiny, fill=white, inner sep=1pt, rounded corners=1pt}
+]
+
+% =================== Row 1: Category (зүүн дээд), User (төв) ===================
+\node[class] (cat) at (-6, 0) {%
+\textbf{Category} \\
+\hrulefill \\
+- ID : uint \\
+- Name, Icon, Color : string \\
+- Type : string \\
+\hrulefill \\
++ IsIncome() : bool};
+
+\node[class] (user) at (10, 0) {%
+\textbf{User} \\
+\hrulefill \\
+- ID : uint \\
+- Name, Email : string \\
+- Password : string \\
+- Currency, PushToken : string \\
+\hrulefill \\
++ HashPassword() \\
++ CheckPassword() : bool \\
++ GenerateJWT() : string};
+
+% =================== Row 2: 6 хэрэглэгчийн хүүхэд анги ===================
+\node[classfin] (acc)   at (-2.5, -6) {%
+\textbf{Account} \\
+\hrulefill \\
+- ID, UserID : uint \\
+- Name, Type, Icon : string \\
+- Balance : float64 \\
+\hrulefill \\
++ UpdateBalance(amt) \\
++ Validate() : error};
+
+\node[classfin] (bud)   at (2.5, -6) {%
+\textbf{Budget} \\
+\hrulefill \\
+- ID, UserID : uint \\
+- CategoryID : uint \\
+- Amount, Spent : float64 \\
+- Month, Year : int \\
+\hrulefill \\
++ Remaining() : float64 \\
++ IsExceeded() : bool};
+
+\node[classai] (chat)   at (7.5, -6) {%
+\textbf{AIChat} \\
+\hrulefill \\
+- ID, UserID : uint \\
+- Title : string \\
+- CreatedAt : time.Time \\
+\hrulefill \\
++ AddMessage(msg)};
+
+\node[classai] (anal)   at (12.5, -6) {%
+\textbf{AIAnalysis} \\
+\hrulefill \\
+- ID, UserID : uint \\
+- Filename, BankName : string \\
+- Income, Expenses : float64 \\
+- CategoriesJSON : json \\
+\hrulefill \\
++ Summary() : string};
+
+\node[classaud] (notif) at (17.5, -6) {%
+\textbf{Notification} \\
+\hrulefill \\
+- ID, UserID : uint \\
+- Title, Body, Type : string \\
+- IsRead : bool \\
+\hrulefill \\
++ MarkRead()};
+
+\node[classaud] (log)   at (22.5, -6) {%
+\textbf{ActivityLog} \\
+\hrulefill \\
+- ID, UserID : uint \\
+- Action, Entity : string \\
+- Details, IPAddress : string \\
+- Status : string};
+
+% =================== Row 3: ач хүүхэд анги (зэрэгцүүлсэн) ===================
+\node[classfin] (tx)    at (-2.5, -12) {%
+\textbf{Transaction} \\
+\hrulefill \\
+- ID, UserID : uint \\
+- AccountID, CategoryID : uint \\
+- Amount : float64 \\
+- Date : time.Time \\
+- Description : string \\
+\hrulefill \\
++ ApplyToBalance() \\
++ Reverse()};
+
+\node[classfin] (sch)   at (2.5, -12) {%
+\textbf{ScheduledPayment} \\
+\hrulefill \\
+- ID, UserID, AccountID : uint \\
+- CategoryID : uint \\
+- Frequency : string \\
+- NextDate : time.Time \\
+- IsActive : bool \\
+\hrulefill \\
++ Trigger() \\
++ Toggle()};
+
+\node[classai] (msg)    at (7.5, -12) {%
+\textbf{AIMessage} \\
+\hrulefill \\
+- ID, ChatID : uint \\
+- Role : string \\
+- Content : text \\
+\hrulefill \\
++ IsUser() : bool};
+
+% =================== Холболтууд ===================
+
+% --- User-ийн компози харилцаа (User → 6 хүүхэд анги) ---
+\draw[compose] (user.south) -- node[card, pos=0.55]{1..*} (acc.north);
+\draw[compose] (user.south) -- node[card, pos=0.6]{1..*}  (bud.north);
+\draw[compose] (user.south) -- node[card, pos=0.65]{1..*} (chat.north);
+\draw[compose] (user.south) -- node[card, pos=0.65]{1..*} (anal.north);
+\draw[compose] (user.south) -- node[card, pos=0.6]{1..*}  (notif.north);
+\draw[compose] (user.south) -- node[card, pos=0.55]{1..*} (log.north);
+
+% --- Account-ийн компози харилцаа (босоо зэрэгцүүлэлттэй) ---
+\draw[compose] (acc.south) -- node[card]{1..*} (tx.north);
+\draw[compose] (acc.south east) -- ([xshift=-0.8cm]sch.north);
+
+% --- AIChat → AIMessage (босоо шууд) ---
+\draw[compose] (chat.south) -- node[card]{1..*} (msg.north);
+
+% --- Category-ийн ассоциаци (орт-маршрутаар цэгцлэв) ---
+% Cat → Budget: дээгүүр гарч Budget-ийн оройд бууна
+\draw[assoc] (cat.east) -- (2.5, 0) -- node[card, pos=0.95]{1..*} (bud.north);
+% Cat → Transaction: зүүн талын коридороор бууж зүүн дээд буланд бууна
+\draw[assoc] (cat.south) -- (-6, -10.5) -- node[card, pos=0.6]{1..*} ([xshift=-0.3cm]tx.north);
+% Cat → ScheduledPayment: Budget ба AIChat-ийн хоорондох зайгаар буцаж бууна
+\draw[assoc] (cat.east) -- (5, 0) -- (5, -10.5) -- node[card, pos=0.5]{1..*} ([xshift=0.3cm]sch.north);
+
+\end{tikzpicture}
+}
+\caption{Class Diagram (Класс диаграм) --- сервер талын загварууд ба харилцаа (композици: $\blacklozenge\!-$, ассоциаци: $\rightarrow$)}
+\label{fig:class}
+\end{figure}
+
+\textbf{Тэмдэглэгээ.} Ромб ($\blacklozenge$) тэмдэгтэй холболт нь \textbf{композици} харилцаа --- эзэмшигч (User эсвэл Account) устгахад дэд объектууд хамт устдаг (ON DELETE CASCADE-той тохирно). Сум ($\rightarrow$) нь Category-аас Transaction, Budget, ScheduledPayment рүү чиглэх \textit{ассоциаци} (лавлагаа) харилцааг илэрхийлнэ. Хэрэглэгч бүх модулийн төв байх тул дээд эгнээнд төвлөрсөн, доошоо зургаан хүүхэд анги салаалсан хэлбэрээр байрласан.
+
+\section{Өгөгдлийн сангийн зохиомж}
+Систем PostgreSQL 16-г сонгосон бөгөөд 11 хүснэгтэд автомат миграц хийгдэнэ.\\
+
+PostgreSQL-ийг сонгосон гол шалтгаан \cite{kleppmann}:
+\begin{itemize}
+    \item \textbf{ACID шинж.} Санхүүгийн системд транзакцийн бүрэн бүтэн байдал чухал.
+    \item \textbf{Foreign key хатуу хэрэгжүүлэлт.} Нэг хэрэглэгчийн гүйлгээ нь зөвхөн өөрийнх нь дансанд харьяалагдана.
+    \item \textbf{JSON багана.} Уян хатан бүтэцтэй өгөгдлийг (ангиллын задаргаа JSON) шууд хадгалах боломжтой.
+    \item \textbf{Индексүүд.} Хайлт болон хуудаслалт хурдан байх.
+    \item \textbf{Бодит зэрэгцээ хандалтын хяналт.} Олон хэрэглэгчээс зэрэг хандсан тохиолдолд тохирох түгжих (locking) механизмтай.
+\end{itemize}
+
+\subsection{Хүснэгт бүрийн зориулалт}
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|l|p{3cm}|p{6.5cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Хүснэгт}} & \textcolor{white}{\textbf{Цөм багана}} & \textcolor{white}{\textbf{Зориулалт}} \\ \hline
+\texttt{users}        & email, password         & Хэрэглэгчийн данс. \\ \hline
+\texttt{accounts}     & balance, type           & Олон данс (4 төрөл). \\ \hline
+\texttt{categories}   & name, type              & Орлого/зарлагын ангилал (17 эх өгөгдөл). \\ \hline
+\texttt{transactions} & amount, date            & Бүх гүйлгээ. \\ \hline
+\texttt{budgets}      & month, year, amount     & Сар тутмын төсөв ангиллаар. \\ \hline
+\texttt{scheduled\_payments} & frequency        & Давтагдах төлбөр. \\ \hline
+\texttt{ai\_chats}    & title                   & Чат сесс. \\ \hline
+\texttt{ai\_messages} & role, content          & Чат мессеж (user/assistant). \\ \hline
+\texttt{ai\_analyses} & categories\_json        & Банкны хуулгын шинжилгээ. \\ \hline
+\texttt{notifications} & title, body, type      & Push мэдэгдлүүд. \\ \hline
+\texttt{activity\_logs} & action, ip\_address  & Аудитын мөр. \\ \hline
+\end{tabular}
+\caption{Өгөгдлийн санд хадгалагдах 11 хүснэгт}
+\label{tab:tables}
+\end{table}
+
+\subsection{Хүснэгтүүдийн уялдаа (ER диаграм)}
+ER диаграммыг харьцангуй цэгцтэй байлгахын тулд хүснэгтүүдийг 4 эгнээ, 3 баганад байрлуулж, гадаад түлхүүрийн уялдааг \textbf{зөв өнцөгт сум} буюу зөв өнцгөөр эргэх шугамаар зурсан. Уялдааны төгсгөлд тэмдэг тавиагүй учир бүх холболт нь \textit{1:N} (нэг талд олон) харьцаатай.
+
+\begin{figure}[ht]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    entity/.style={draw=darknavy, fill=accentblue!18, very thick, rectangle, rounded corners=4pt, align=left, inner sep=6pt, font=\scriptsize\ttfamily, minimum width=4cm},
+    entityai/.style={entity, fill=accentpurple!18},
+    entityfin/.style={entity, fill=accentgreen!18},
+    entityaud/.style={entity, fill=accentorange!22},
+    rel/.style={-, very thick, draw=darknavy!75},
+    relai/.style={-, very thick, draw=accentpurple!85},
+    relaud/.style={-, very thick, draw=accentorange!85}
+]
+
+% Эгнээ 1: Гол өгөгдөл (users, accounts, categories)
+\node[entity]    (user) at (0,0)    {%
+\textbf{users} \\
++ id PK\\
++ name, email UQ\\
++ password (bcrypt)\\
++ currency, push\_token};
+
+\node[entityfin] (acc)  at (6,0)    {%
+\textbf{accounts} \\
++ id PK\\
++ user\_id FK\\
++ name, type\\
++ balance, icon};
+
+\node[entity]    (cat)  at (12,0)   {%
+\textbf{categories} \\
++ id PK\\
++ name, icon, color\\
++ type};
+
+% Эгнээ 2: Финанс модуль (budgets, transactions, scheduled_payments)
+\node[entityfin] (bud)   at (0, -4) {%
+\textbf{budgets} \\
++ id PK\\
++ user\_id, category\_id FK\\
++ amount, spent\\
++ month, year};
+
+\node[entityfin] (tx)    at (6, -4) {%
+\textbf{transactions} \\
++ id PK\\
++ user\_id FK\\
++ account\_id FK\\
++ category\_id FK\\
++ amount, date};
+
+\node[entityfin] (sched) at (12, -4){%
+\textbf{scheduled\_payments} \\
++ id PK\\
++ user\_id, account\_id FK\\
++ category\_id FK\\
++ frequency, next\_date};
+
+% Эгнээ 3: AI модуль (ai_chats, ai_messages, ai_analyses)
+\node[entityai] (chat)  at (0, -8)  {%
+\textbf{ai\_chats} \\
++ id PK\\
++ user\_id FK\\
++ title};
+
+\node[entityai] (msg)   at (6, -8)  {%
+\textbf{ai\_messages} \\
++ id PK\\
++ chat\_id FK\\
++ role, content};
+
+\node[entityai] (anal)  at (12, -8) {%
+\textbf{ai\_analyses} \\
++ id PK\\
++ user\_id FK\\
++ filename, bank\_name\\
++ income, expenses\\
++ categories\_json};
+
+% Эгнээ 4: Туслах (notifications, activity_logs)
+\node[entityaud] (notif) at (0, -12) {%
+\textbf{notifications} \\
++ id PK, user\_id FK\\
++ title, body, type\\
++ is\_read};
+
+\node[entityaud] (log)   at (6, -12) {%
+\textbf{activity\_logs} \\
++ id PK, user\_id FK\\
++ action, entity\\
++ details, status\\
++ ip\_address};
+
+% --- Холболтууд (зөв өнцөгт шугам) ---
+
+% Row 1: users → accounts; categories → accounts (горизонтальные)
+\draw[rel] (user.east)  -- (acc.west);
+\draw[rel] (cat.west)   -- (acc.east);
+
+% users → budgets / tx (вниз)
+\draw[rel] (user.south) -- (bud.north);
+\draw[rel] (user.south east) |- ([yshift=4mm]tx.north);
+
+% accounts → tx (вниз)
+\draw[rel] (acc.south)  -- (tx.north);
+
+% accounts → scheduled_payments (вниз с правой стороны)
+\draw[rel] (acc.south east) |- ([yshift=4mm]sched.north);
+
+% categories -> tx (доош, баруун талаас)
+\draw[rel] (cat.south)  -- ([yshift=4mm]tx.north east);
+
+% categories → budgets / scheduled (orthogonal)
+\draw[rel] (cat.south west) |- ([yshift=4mm]bud.north east);
+\draw[rel] (cat.south)  -- (sched.north);
+
+% users → ai модуль (ai_chats зүүн талаар, ai_analyses баруун талаар)
+\draw[relai] (user.west)  to[out=180, in=180] (chat.west);
+\draw[relai] (user.east)  to[out=0,   in=0]   (anal.east);
+
+% chat → msg
+\draw[relai] (chat.east)  -- (msg.west);
+
+% users → notifications / activity_logs
+\draw[relaud] (user.west) to[out=180, in=180] (notif.west);
+\draw[relaud] (user.south west) to[out=-90, in=180] (log.west);
+
+\end{tikzpicture}
+}
+\caption{Entity-Relationship Diagram (ER диаграм) --- 11 хүснэгтийн foreign-key уялдаа}
+\label{fig:erd}
+\end{figure}
+
+Хайрцагны өнгөний кодлол: цэнхэр --- цөм өгөгдөл, ногоон --- санхүүгийн модуль, нил ягаан --- AI модуль, улбар шар --- туслах (мэдэгдэл, аудит). Цэгцтэй байлгахын тулд цөөн тооны хэвтээ ба босоо шугам ашигласан.
+
+\subsection{Foreign key хязгаарлалт}
+Бүх FK-ууд ON DELETE CASCADE-тай тохируулагдсан. Хэрэв хэрэглэгч өөрийгөө устгах бол:
+\begin{itemize}
+    \item Бүх данс, гүйлгээ, төсөв, давтагдах төлбөр, чат, чат мессеж, шинжилгээ, мэдэгдэл, лог автоматаар устана.
+    \item Гүйлгээ өөрөө устгагдвал зөвхөн данс л үлдэнэ (үлдэгдэл шинэчлэгдэнэ).
+\end{itemize}
+
+\section{REST API цэгийн зохиомж}
+Систем нийт \textbf{45 API цэгтэй} бөгөөд RESTful зарчмын \cite{rest} дагуу боловсруулсан:
+\begin{itemize}
+    \item Нөөц төвтэй URL (\texttt{/transactions}, \texttt{/budgets}),
+    \item HTTP аргуудыг семантик зориулалтаар нь ашигласан (GET --- унших, POST --- үүсгэх, PUT --- шинэчлэх, DELETE --- устгах),
+    \item Хариулт нь стандарт JSON формат, HTTP төлвийн код зөв ашигласан (200, 201, 400, 401, 404, 409, 500),
+    \item Хуудаслалт нь \texttt{?page=1\&limit=20} асуулгын параметрээр.
+\end{itemize}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|c|p{4.2cm}|p{6cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Method}} & \textcolor{white}{\textbf{Path}} & \textcolor{white}{\textbf{Зориулалт}} \\ \hline
+POST   & \texttt{/auth/register}            & Бүртгэл \\ \hline
+POST   & \texttt{/auth/login}               & Имэйл + нууц үгээр нэвтрэлт \\ \hline
+POST   & \texttt{/auth/forgot-password}     & Нууц үг сэргээх хүсэлт \\ \hline
+GET    & \texttt{/auth/social/providers}    & Нийгмийн нэвтрэлтийн нийлүүлэгчийн жагсаалт \\ \hline
+POST   & \texttt{/auth/social/login}        & Google/Apple/Facebook нэвтрэлт \\ \hline
+GET    & \texttt{/profile}                  & Профайл харах \\ \hline
+PUT    & \texttt{/profile}                  & Профайл шинэчлэх \\ \hline
+PUT    & \texttt{/profile/password}         & Нууц үг солих \\ \hline
+POST   & \texttt{/profile/avatar}           & Аватар зураг солих \\ \hline
+GET    & \texttt{/dashboard}                & Хяналтын самбарын үзүүлэлт \\ \hline
+GET    & \texttt{/expenses/summary}         & Зарлагын нэгтгэл \\ \hline
+GET    & \texttt{/statistics}               & Хугацаа дамнасан статистик \\ \hline
+POST/GET/DELETE & \texttt{/transactions}    & Гүйлгээний CRUD (4) \\ \hline
+POST/GET/PUT/DELETE & \texttt{/budgets}     & Сарын төсвийн CRUD (4) \\ \hline
+POST/GET/PUT/DELETE & \texttt{/accounts}    & Дансны CRUD (4) \\ \hline
+GET, POST & \texttt{/categories}            & Ангилал унших, нэмэх (2) \\ \hline
+POST/GET/DELETE/PUT & \texttt{/scheduled-payments} & Давтагдах төлбөрийн CRUD (4) \\ \hline
+PUT    & \texttt{/scheduled-payments/:id/toggle} & Идэвхтэй/идэвхгүй болгох \\ \hline
+POST   & \texttt{/ai/chat}                  & AI чат руу мессеж илгээх \\ \hline
+POST/GET/DELETE & \texttt{/ai/chats}        & Чат сесс-ийн CRUD (4) \\ \hline
+\textbf{POST}   & \textbf{\texttt{/ai/analysis}} & \textbf{Банкны хуулга AI шинжилгээ} \\ \hline
+GET, DELETE & \texttt{/ai/analyses}         & Шинжилгээний түүх (3) \\ \hline
+POST   & \texttt{/import/statement}         & Текст-only хуулга import \\ \hline
+POST   & \texttt{/push-token}               & Expo push токен бүртгэл \\ \hline
+GET, PUT  & \texttt{/notifications}         & Мэдэгдэл удирдах (4) \\ \hline
+GET    & \texttt{/activity-logs}            & Аудит лог жагсаалт \\ \hline
+GET    & \texttt{/activity-logs/summary}    & Аудит нэгтгэлийн статистик \\ \hline
+\end{tabular}
+\caption{REST API-гийн гол цэгүүдийн жагсаалт}
+\label{tab:endpoints}
+\end{table}
+
+\section{AI шинжилгээний хоолой}
+Системийн хамгийн нарийн хэсэг нь банкны хуулгыг автомат байдлаар бүтэцтэй форматруу хөрвүүлж AI-д тэжээх хоолой юм.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    pipestep/.style={rectangle, rounded corners, draw=darknavy, very thick, minimum width=2.4cm, minimum height=1cm, align=center, font=\scriptsize},
+    s1/.style={pipestep, fill=accentblue!25},
+    s2/.style={pipestep, fill=accentteal!25},
+    s3/.style={pipestep, fill=accentgreen!25},
+    s4/.style={pipestep, fill=accentyellow!40},
+    s5/.style={pipestep, fill=accentpurple!25},
+    s6/.style={pipestep, fill=accentorange!25},
+    arrow/.style={-{Stealth[length=3mm]}, very thick, draw=darknavy}
+]
+
+\node[s1] (up)   at (0,0)      {1. Байршуулах\\PDF/CSV/XLSX};
+\node[s2] (sv)   at (3.5,0)    {2. Файл\\хадгалах};
+\node[s3] (ps)   at (7,0)      {3. Задлан\\унших};
+\node[s4] (cb)   at (10.5,0)   {4. Ангиллын\\задаргаа};
+\node[s5] (ai)   at (10.5,-3)  {5. AI\\хураангуй};
+\node[s6] (db)   at (3.5,-3)   {6. DB-д\\хадгалах};
+\node[s1] (out)  at (0,-3)     {7. JSON\\хариулт};
+
+\draw[arrow] (up.east) -- (sv.west);
+\draw[arrow] (sv.east) -- (ps.west);
+\draw[arrow] (ps.east) -- (cb.west);
+\draw[arrow] (cb.south) -- (ai.north);
+\draw[arrow] (ai.west) -- (db.east);
+\draw[arrow] (db.west) -- (out.east);
+
+\end{tikzpicture}
+\caption{Хуулга → AI шинжилгээ урсгал (7 алхам)}
+\label{fig:ai-урсгал}
+\end{figure}
+
+\subsection{Алхам бүрийн дэлгэрэнгүй}
+\begin{enumerate}
+    \item \textbf{Файл байршуулах.} Хэрэглэгч \texttt{multipart/form-data} ашиглан POST \texttt{/api/v1/ai/analysis} руу файл илгээнэ. PDF, XLSX, XLS, CSV-г зөвшөөрнө.
+    \item \textbf{Файл хадгалах.} Сервер файлыг \texttt{./uploads/statements/statement\_<userID>\_<unix>.<ext>} нэрээр хадгална. Файлын нэр давхардахаас сэргийлж Unix цагийн тэмдэглэгээг дугаар болгон ашигладаг.
+    \item \textbf{Задлан унших.} Python хуулга задлагч ажиллаж байвал HTTP-ээр шууд дамжуулагдана; үгүй бол Go-ийн нөөц задлагч ашиглагдана. Хариулт нь \texttt{ParsedStatement} бүтэц юм.
+    \item \textbf{Ангиллын задаргаа.} Хэрэв задлагчаас задаргаа ирээгүй бол гүйлгээний жагсаалтаас ангиллаар бүлэглэх функц ажиллаж хувь, тоог тооцоолно.
+    \item \textbf{AI хураангуй.} \texttt{ai\_provider.go} модулийн \texttt{generateAIResponse} функц нь үндсэн нийлүүлэгч (анхдагч \texttt{gemini-2.5-flash}) рүү системийн зааварчилгаа болон JSON контекстийг илгээж, амжилтгүй бол OpenRouter руу автомат нөөц шилжилт хийж хүн уншигдахуйц хураангуй болон 3-5 зөвлөмжийн жагсаалт буцаана.
+    \item \textbf{Өгөгдлийн санд хадгалах.} Бүх үр дүнг \texttt{ai\_analyses} хүснэгтэд хадгална (categories\_json, transactions\_json, recommendations\_json).
+    \item \textbf{Хариулт.} Хэрэглэгч тал руу \texttt{AIAnalysisResponse} JSON-оор бүх дугаар, графикийн өгөгдөл, зөвлөмж, AI хураангуй буцаана.
+\end{enumerate}
+
+\subsection{AI чатын алхамчилсан гүйцэтгэл}
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    actor/.style={draw=darknavy, fill=accentteal!30, thick, rectangle, rounded corners, minimum width=2cm, minimum height=0.7cm, font=\footnotesize},
+    msg/.style={->, thick, draw=darknavy, font=\scriptsize},
+    ret/.style={->, thick, draw=accentgreen, dashed, font=\scriptsize}
+]
+
+\node[actor] (u)  at (0, 0)  {Хэрэглэгч};
+\node[actor] (fe) at (3, 0)  {Хэрэглэгч тал};
+\node[actor] (be) at (6, 0)  {Сервер тал};
+\node[actor] (db) at (9, 0)  {DB};
+\node[actor] (ai) at (12, 0) {AI / LLM};
+
+\foreach \x in {0,3,6,9,12} {
+    \draw[dashed, thick, gray] (\x, -0.4) -- (\x, -7);
+}
+
+\draw[msg] (0,-1) -- node[above]{асуулт бичих} (3,-1);
+\draw[msg] (3,-1.7) -- node[above]{POST /ai/chat} (6,-1.7);
+\draw[msg] (6,-2.4) -- node[above]{сүүлийн 30 хоногийн Tx} (9,-2.4);
+\draw[ret] (9,-3.0) -- node[above]{Tx + balance} (6,-3.0);
+\draw[msg] (6,-3.7) -- node[above]{зааварчилгаа + контекст} (12,-3.7);
+\draw[ret] (12,-4.4) -- node[above]{LLM хариулт} (6,-4.4);
+\draw[msg] (6,-5.1) -- node[above]{AIMessage хадгалах} (9,-5.1);
+\draw[ret] (6,-5.8) -- node[above]{200 OK} (3,-5.8);
+\draw[ret] (3,-6.5) -- node[above]{дүрслэх} (0,-6.5);
+
+\end{tikzpicture}
+\caption{Sequence Diagram (Дарааллын диаграм) --- AI чат}
+\label{fig:seq-chat}
+\end{figure}
+
+\subsection{Гүйлгээ нэмэх үйл ажиллагааны диаграм}
+Дараах үйл ажиллагааны диаграм нь хэрэглэгч шинэ гүйлгээ нэмэхэд системд хийгдэх алхмууд, шийдвэрийн салаалт, хэвийн ба алдаатай гарцыг тодорхой үзүүлж байна.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    >={Stealth[length=3mm]},
+    start/.style={circle, draw=darknavy, fill=darknavy, minimum size=6mm, inner sep=0pt},
+    finish/.style={circle, draw=darknavy, very thick, minimum size=7mm, inner sep=0pt, double, double distance=1.2pt},
+    enderr/.style={circle, draw=accentorange!85!black, fill=accentorange!85!black, very thick, minimum size=4mm, inner sep=0pt, path picture={\draw[white, line width=0.6pt] (path picture bounding box.north west) -- (path picture bounding box.south east); \draw[white, line width=0.6pt] (path picture bounding box.north east) -- (path picture bounding box.south west);}},
+    act/.style={rectangle, rounded corners=4pt, draw=darknavy, very thick, fill=accentblue!22, align=center, font=\scriptsize, minimum width=4.5cm, minimum height=0.9cm},
+    actfin/.style={act, fill=accentgreen!22},
+    actai/.style={act, fill=accentpurple!22},
+    decision/.style={diamond, draw=darknavy, very thick, fill=accentyellow!45, align=center, font=\scriptsize, aspect=2, inner sep=1pt},
+    error/.style={rectangle, rounded corners=4pt, draw=accentorange!80!black, very thick, fill=accentorange!35, align=center, font=\scriptsize, minimum width=3.5cm, minimum height=0.9cm},
+    flow/.style={->, very thick, draw=darknavy},
+    flowerr/.style={->, very thick, draw=accentorange!85!black, dashed},
+    branchlbl/.style={font=\scriptsize\bfseries, inner sep=2pt}
+]
+
+\node[start] (s) at (0,0) {};
+\node[act]   (form) at (0,-1.2) {Хэрэглэгч гүйлгээний\\ маягт бөглөх};
+\node[act]   (submit) at (0,-2.7) {POST /api/v1/transactions\\ илгээх};
+
+\node[decision] (jwt)   at (0,-4.4)  {JWT хүчинтэй\\ юу?};
+\node[error]    (e1)    at (5.5,-4.4){401 Unauthorized};
+\node[enderr]   (ef1)   at (9.5,-4.4){};
+
+\node[decision] (valid) at (0,-6.4)  {Талбарууд\\ зөв үү?};
+\node[error]    (e2)    at (5.5,-6.4){400 Bad Request};
+\node[enderr]   (ef2)   at (9.5,-6.4){};
+
+\node[actfin]   (lookup) at (0,-8.2) {Account, Category\\ DB-ээс олох};
+
+\node[decision] (own)   at (0,-10.0) {Хэрэглэгчид\\ хамаарах уу?};
+\node[error]    (e3)    at (5.5,-10.0){403 Forbidden};
+\node[enderr]   (ef3)   at (9.5,-10.0){};
+
+\node[actfin]   (insert) at (0,-11.8) {transactions хүснэгтэд\\ оруулах (INSERT)};
+\node[actfin]   (bal)    at (0,-13.3) {Дансны үлдэгдэл\\ дахин тооцох};
+\node[actfin]   (budget) at (0,-14.8) {Хамаарагч төсвийн\\ Spent шинэчлэх};
+\node[actai]    (audit)  at (0,-16.3) {activity\_logs-д\\ үйлдэл бүртгэх};
+\node[act]      (resp)   at (0,-17.8) {201 Created + JSON\\ хариулт буцаах};
+\node[finish]   (f)      at (0,-19.2) {};
+
+% Үндсэн (амжилтын) урсгал
+\draw[flow] (s) -- (form);
+\draw[flow] (form) -- (submit);
+\draw[flow] (submit) -- (jwt);
+\draw[flow] (jwt.south)   -- node[branchlbl, right]{Тийм} (valid.north);
+\draw[flow] (valid.south) -- node[branchlbl, right]{Тийм} (lookup.north);
+\draw[flow] (lookup) -- (own);
+\draw[flow] (own.south)   -- node[branchlbl, right]{Тийм} (insert.north);
+\draw[flow] (insert) -- (bal);
+\draw[flow] (bal)    -- (budget);
+\draw[flow] (budget) -- (audit);
+\draw[flow] (audit)  -- (resp);
+\draw[flow] (resp)   -- (f);
+
+% Алдааны салаа гарцууд (тус бүрдээ өөрийн төгсгөлтэй)
+\draw[flowerr] (jwt.east)   -- node[branchlbl, above]{Үгүй} (e1.west);
+\draw[flowerr] (e1.east)    -- (ef1);
+\draw[flowerr] (valid.east) -- node[branchlbl, above]{Үгүй} (e2.west);
+\draw[flowerr] (e2.east)    -- (ef2);
+\draw[flowerr] (own.east)   -- node[branchlbl, above]{Үгүй} (e3.west);
+\draw[flowerr] (e3.east)    -- (ef3);
+
+\end{tikzpicture}
+\caption{Activity Diagram (Үйл ажиллагааны диаграм) --- гүйлгээ нэмэх}
+\label{fig:activity-tx}
+\end{figure}
+
+\textbf{Тайлбар.} Шар ромбоор шийдвэрийн салаалтыг (JWT баталгаажуулалт, оролтын баталгаажуулалт, эзэмшил шалгалт), цэнхэр-ногоон тэгш өнцөгтөөр төлөв шинэчлэх үйлдлүүдийг, улбар шар тэгш өнцөгтөөр алдааны гарцыг харуулав. Алдаа бүр өөрийн ($\otimes$) төгсгөлийн тэмдэгтэй --- гүйцэтгэл тухайн алхамд зогсож, хэрэглэгч рүү HTTP төлөв буцаагдана. Хэвийн урсгалд 7 алхам дамжин, эцэст нь 201 Created хариу буцна.
+
+\section{Хэрэглэгч талын зохиомж}
+
+\subsection{Дэлгэцийн жагсаалт}
+React Native гар утасны программ нь нийт \textbf{17 дэлгэцтэй} ба \texttt{src/screens/} хавтсанд төвлөрсөн.
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|p{4.5cm}|p{8cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Дэлгэц}} & \textcolor{white}{\textbf{Зориулалт}} \\ \hline
+OnboardingScreen      & Анхны нээлтийн угтах дэлгэц. \\ \hline
+LoginScreen           & Нэвтрэх. \\ \hline
+RegisterScreen        & Бүртгүүлэх. \\ \hline
+HomeScreen            & Хяналтын самбар, үлдэгдэл, гүйлгээ. \\ \hline
+TransactionsScreen    & Бүх гүйлгээний жагсаалт, шүүлт. \\ \hline
+AddTransactionScreen  & Шинэ гүйлгээ. \\ \hline
+ExpensesScreen        & Ангилал бүрийн зарлага + тойрог график. \\ \hline
+StatisticsScreen      & Хугацаагаар (өдөр/долоо/сар/жил) багана график. \\ \hline
+BudgetScreen          & Сарын төсөв + прогресс. \\ \hline
+AccountsScreen        & Дансны жагсаалт, CRUD. \\ \hline
+ScheduledPaymentsScreen & Давтагдах төлбөр. \\ \hline
+AIChatScreen          & AI санхүүгийн зөвлөгөөч чат. \\ \hline
+DataImportScreen      & Банкны хуулга байршуулах, AI шинжилгээ. \\ \hline
+NotificationsScreen   & Push мэдэгдлүүд. \\ \hline
+ProfileScreen         & Профайл засах. \\ \hline
+SettingsScreen        & Систем тохиргоо. \\ \hline
+PrivacyScreen         & Нууцлал, политик. \\ \hline
+\end{tabular}
+\caption{Хэрэглэгч талын дэлгэцийн жагсаалт}
+\label{tab:screens}
+\end{table}
+
+\subsection{Хэрэглэгч талын кодын зохион байгуулалт}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|l|p{8.5cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Хавтас}} & \textcolor{white}{\textbf{Зориулалт}} \\ \hline
+\texttt{src/screens/}      & 17 дэлгэц. \\ \hline
+\texttt{src/navigation/}   & Stack + Bottom Tab navigator. \\ \hline
+\texttt{src/services/}     & Axios HTTP үйлчилгээ, төрөлтэй. \\ \hline
+\texttt{src/context/}      & AuthContext (нэвтрэх/гарах/бүртгүүлэх). \\ \hline
+\texttt{src/types/}        & TypeScript интерфейс, type. \\ \hline
+\texttt{src/config/}       & Сүлжээний байршуулалт (төвлөрсөн тохиргоо). \\ \hline
+\texttt{tailwind.config.js} & Харанхуй загварын утгууд. \\ \hline
+\texttt{global.css}        & NativeWind base. \\ \hline
+\end{tabular}
+\caption{Хэрэглэгч талын кодын зохион байгуулалт}
+\label{tab:fe-layout}
+\end{table}
+
+\subsection{Дизайн зарчим}
+Дэлгэцийн дизайн нь дараах зарчмыг баримталсан:
+\begin{itemize}
+    \item \textbf{Харанхуй загвар.} Хэрэглэгчийн нүдийг бага ачаална, орчин үеийн гар утасны программуудын нийтлэг стандарт.
+    \item \textbf{Гар утас төвтэй (mobile-first) хандлага.} Гар утасны дэлгэцэнд зориулсан, илүүдэл том элементгүй.
+    \item \textbf{Картын систем.} Мэдээллийг бие даасан карт (card)-ууд хэлбэрээр харуулна.
+    \item \textbf{Тогтмол өнгөний код.} Орлого --- ногоон, зарлага --- улаан, AI --- ягаан.
+    \item \textbf{Микро харилцан үйлчлэл.} Товчлуур дарах, гүйлгээ нэмэх үед анимац үзүүлнэ.
+\end{itemize}
+
+\subsection{Гол дэлгэцийн зохиомж}
+Доорх диаграмаас гол дэлгэцүүдийн схем зохион байгуулалтыг харж болно.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    phone/.style={draw=darknavy, very thick, rounded corners=8pt, fill=darknavy, minimum width=4cm, minimum height=7cm},
+    screen/.style={draw=midgrey, fill=white, minimum width=3.6cm, minimum height=6.4cm, font=\scriptsize, align=center},
+    head/.style={fill=accentblue, draw=accentblue, text=white, font=\scriptsize\bfseries, minimum width=3.6cm, minimum height=0.7cm, align=center},
+    section/.style={fill=softgrey, draw=midgrey, font=\scriptsize, minimum width=3.4cm, minimum height=0.9cm, align=center}
+]
+
+% Phone 1: Home
+\node[phone] (p1) at (0,0) {};
+\node[head] at (0, 3.0) {Нүүр / Самбар};
+\node[section, fill=accentpurple!30] at (0, 1.9) {Total Balance \\ \textbf{MNT 4.25M}};
+\node[section, fill=accentgreen!30] at (-0.8, 0.7) {Income};
+\node[section, fill=accentred!30] at (0.8, 0.7) {Expense};
+\node[section] at (0, -0.5) {Recent Tx};
+\node[section] at (0, -1.6) {Quick add};
+\node[section, fill=accentyellow!40] at (0, -2.7) {AI Insight};
+
+% Phone 2: AI Chat
+\node[phone] (p2) at (5,0) {};
+\node[head, fill=accentpurple] at (5, 3.0) {AI Advisor};
+\node[section, fill=accentpurple!15, minimum height=0.6cm] at (5, 2.1) {Сар бүр зарлага \\ яагаад өсдөг вэ?};
+\node[section, fill=accentteal!20, minimum height=1.2cm] at (5, 1.0) {AI: Сүүлийн 30 хоногт \\ food, transport ангилалд...};
+\node[section, fill=accentpurple!15, minimum height=0.6cm] at (5, -0.2) {Хадгаламж яаж \\ ихэсгэх вэ?};
+\node[section, fill=accentteal!20, minimum height=1.2cm] at (5, -1.3) {AI: Subscription-уудаа \\ шалгахыг санал болгоё...};
+\node[section, fill=midgrey] at (5, -2.7) {[ Type a message ]};
+
+% Phone 3: AI analysis
+\node[phone] (p3) at (10,0) {};
+\node[head, fill=accentorange] at (10, 3.0) {Statement Analysis};
+\node[section, fill=accentblue!20] at (10, 2.0) {Period: 2026.04};
+\node[section, fill=accentgreen!20, minimum height=0.7cm] at (10, 1.0) {Income: MNT 1.8M};
+\node[section, fill=accentred!20, minimum height=0.7cm] at (10, 0.0) {Expense: MNT 1.4M};
+\node[section, fill=accentyellow!30, minimum height=0.8cm] at (10, -1.1) {Ангилал \\ тойрог график};
+\node[section, fill=accentpurple!20, minimum height=1cm] at (10, -2.4) {AI зөвлөмж: \\ 3 tip};
+
+\end{tikzpicture}
+\caption{Үндсэн гурван дэлгэцийн зохиомж}
+\label{fig:mockup}
+\end{figure}
+
+\section{Аюулгүй байдал ба өгөгдлийн хамгаалалт}
+
+\subsection{Баталгаажуулалт ба эрх олголт}
+\begin{itemize}
+    \item Бүх \texttt{/api/v1/*} API цэг (\texttt{auth/*}-аас бусад) JWT шаарддаг.
+    \item Токен нь HMAC-SHA256-аар гарын үсэгтэй (\texttt{JWT\_SECRET} орчны хувьсагч).
+    \item TTL = 24 цаг.
+    \item Дундын давхарга нь \texttt{Authorization} толгой хэсгийг шалгаж user\_id-г Gin context-д тавина.
+    \item Токен хүчингүй болсон бол клиент сэргээх (refresh) механизмгүй, дахин нэвтрэх ёстой.
+\end{itemize}
+
+\subsection{Нууц үгийн аюулгүй байдал}
+\begin{itemize}
+    \item Bcrypt cost 10 (анхдагч) ашиглана.
+    \item Ил текст нууц үг ямар ч лог, хариуд буцдаггүй (\texttt{json:\textquotedbl-\textquotedbl}).
+    \item Хамгийн багадаа 6 тэмдэгт шаардлага.
+\end{itemize}
+
+\subsection{SQL injection хамгаалалт}
+GORM нь параметрлэсэн асуулгыг анхдагчаар ашигладаг тул SQL injection халдлага хориглогдсон. Бүх боловсруулагчид \texttt{Where(...)}-ийг хоёр параметртэй хэлбэрээр, утгын байрлуулагч ашиглан дуудсан.
+
+\subsection{CORS}
+Хэрэглэгч тал сервер тал руу хандах боломжийг \texttt{middleware/cors.go}-аас зөвшөөрсөн. Үйлдвэрлэлийн орчинд тодорхой origin-ыг зөвшөөрөгдсөн жагсаалтад оруулна.
+
+\subsection{HTTPS}
+Үйлдвэрлэлийн орчинд reverse proxy (nginx эсвэл Caddy) дээр TLS termination хийнэ. Let's Encrypt-ийн үнэгүй сертификат ашигладаг.
+
+\section{Контейнержуулалт ба ажиллах орчин}
+\textbf{docker-compose.yml} нь 2 үйлчилгээг зэрэг ажиллуулна: \texttt{postgres} (port 5433 → 5432) ба \texttt{backend} (port 8080). Сервер талын Dockerfile нь олон шатлалт бүтээлттэй:
+\begin{enumerate}
+    \item \textbf{Бүтээгч шат.} \texttt{golang:1.25-alpine}-ээр Go binary-г \texttt{CGO\_ENABLED=0} тохиргоотой хөрвүүлнэ.
+    \item \textbf{Эцсийн шат.} \texttt{alpine:3.19} дээр зөвхөн binary + ca-certificates + tzdata байрлана. Эцсийн дүрс \textasciitilde{}20МБ хэмжээтэй.
+\end{enumerate}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|l|p{4cm}|p{5cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Үйлчилгээ}} & \textcolor{white}{\textbf{Дүрс}} & \textcolor{white}{\textbf{Тэмдэглэл}} \\ \hline
+\texttt{postgres} & \texttt{postgres:16-alpine}    & port 5432→5433, healthcheck. \\ \hline
+\texttt{backend}  & \texttt{./backend}-ээс бүтээх  & port 8080, depends\_on postgres. \\ \hline
+\end{tabular}
+\caption{Docker Compose үйлчилгээний тохиргоо}
+\label{tab:docker}
+\end{table}
+
+\section{Хэрэгжүүлэлтийн жишээ кодууд}
+
+\subsection{Хэрэглэгч бүртгэлийн боловсруулагч}
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\scriptsize, caption={Бүртгэлийн боловсруулагч: bcrypt, JWT, анхдагч данс}]
+func (h *AuthHandler) Register(c *gin.Context) {
+    var req models.RegisterRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(400, gin.H{"error": err.Error()}); return
+    }
+    var existing models.User
+    if err := h.DB.Where("email = ?", req.Email).First(&existing).Error; err == nil {
+        c.JSON(409, gin.H{"error": "Email already registered"}); return
+    }
+    hash, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+    user := models.User{Name: req.Name, Email: req.Email, Password: string(hash)}
+    h.DB.Create(&user)
+    h.DB.Create(&models.Account{UserID: user.ID, Name: "Main Account", Type: "bank"})
+    token, _ := h.generateToken(user.ID)
+    c.JSON(201, models.AuthResponse{Token: token, User: user})
+}
+\end{lstlisting}
+
+\section{Олон нийлүүлэгчтэй AI архитектур}
+Дипломын ажлын хамгийн өвөрмөц техникийн шийдэл бол \textbf{олон нийлүүлэгчтэй AI}-ийн архитектур юм. Энэ нь нэг талаас Монгол Улсаас Gemini API руу шууд хандах боломжгүй газарзүйн хязгаарлалтыг шийддэг, нөгөө талаас аль нэг үйлчилгээ доголдсон тохиолдолд системийг зогсоохгүй байх баталгааг хангадаг.
+
+\subsection{Нийлүүлэгчийн дараалал}
+\begin{enumerate}
+    \item \textbf{Үндсэн нийлүүлэгч:} Google Gemini --- хэрэв \texttt{AI\_API\_KEY} тохируулагдсан бол эхлээд оролдоно.
+    \item \textbf{Нөөц нийлүүлэгч:} OpenRouter --- \texttt{OPENROUTER\_API\_KEY} тохируулагдсан үед автоматаар идэвхжинэ.
+\end{enumerate}
+
+\subsection{Нөөц шилжилтийн нөхцлүүд}
+Нийлүүлэгчийг солих шийдвэр дараах алдаанд тулгуурлана:
+\begin{itemize}
+    \item HTTP 429 (rate limit) --- үнэгүй түвшний өдрийн квот дууссан.
+    \item HTTP 5xx --- үйлчилгээний серверийн алдаа.
+    \item HTTP 451 эсвэл "User location is not supported" текст --- газарзүйн хязгаарлалт.
+    \item Хариу хоосон ирэх.
+\end{itemize}
+
+\subsection{OpenRouter-ийн үнэгүй загварын жагсаалтыг автоматаар шинэчлэх}
+OpenRouter-ийн үнэгүй загварын нэр тогтмол солигддог тул кодын статик жагсаалт хадгалах нь хурдан хуучирдаг. Шийдэл:
+\begin{itemize}
+    \item Систем 1 цаг тутамд \texttt{GET https://openrouter.ai/api/v1/models}-аас бүх загварын жагсаалтыг татна.
+    \item \texttt{pricing.prompt = 0} болон \texttt{pricing.completion = 0} тохиргоотой загварыг үнэгүй гэж тэмдэглэнэ.
+    \item Кэшийг \texttt{sync.Mutex}-ээр хамгаалсан санах ой дахь map-д хадгална.
+    \item Тохиргооны \texttt{OPENROUTER\_MODEL} жагсаалт амжилтгүй болсон тохиолдолд автоматаар татсан жагсаалт руу шилжинэ.
+\end{itemize}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|p{6.5cm}|p{2.5cm}|p{2.6cm}|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Загвар}} & \textcolor{white}{\textbf{Үйлдвэрлэгч}} & \textcolor{white}{\textbf{Параметр}} \\ \hline
+\texttt{meta-llama/llama-3.3-70b-instruct:free}    & Meta       & 70B \\ \hline
+\texttt{qwen/qwen-2.5-72b-instruct:free}           & Alibaba    & 72B \\ \hline
+\texttt{google/gemma-2-9b-it:free}                 & Google     & 9B  \\ \hline
+\texttt{mistralai/mistral-7b-instruct:free}        & Mistral AI & 7B  \\ \hline
+\texttt{meta-llama/llama-3.2-3b-instruct:free}     & Meta       & 3B  \\ \hline
+\texttt{deepseek/deepseek-chat:free}               & DeepSeek   & 67B \\ \hline
+\end{tabular}
+\caption{Анхдагч OpenRouter үнэгүй загварын жагсаалт}
+\label{tab:or-models}
+\end{table}
+
+\subsection{AI / LLM үйлчилгээ дуудах фрагмент}
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\scriptsize, caption={Контекстэд тулгуурласан LLM хариу (gemini-2.5-flash)}]
+client, _ := genai.NewClient(context.Background(), option.WithAPIKey(apiKey))
+defer client.Close()
+model := client.GenerativeModel("gemini-2.5-flash")
+prompt := fmt.Sprintf("You are a personal finance advisor. Context: %s. Question: %s",
+    contextJSON, userMessage)
+resp, _ := model.GenerateContent(ctx, genai.Text(prompt))
+return resp.Candidates[0].Content.Parts[0].(genai.Text)
+\end{lstlisting}
+
+\subsection{React Native AuthContext}
+\begin{lstlisting}[language=,basicstyle=\ttfamily\scriptsize, caption={AuthContext нэвтрэх функц (TypeScript)}]
+const login = async (email: string, password: string) => {
+  const { data } = await api.post('/auth/login', { email, password });
+  await AsyncStorage.setItem('token', data.token);
+  setUser(data.user);
+};
+\end{lstlisting}
+
+\section{Хэрэгжүүлэлтийн тоон үзүүлэлт}
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\rowcolors{2}{softgrey}{white}
+\begin{tabular}{|p{7cm}|c|}
+\hline
+\rowcolor{darknavy}
+\textcolor{white}{\textbf{Үзүүлэлт}} & \textcolor{white}{\textbf{Утга}} \\ \hline
+Сервер талын Go код (мөр)         & $\approx$4{,}900 \\ \hline
+Хэрэглэгч талын TS/TSX (мөр)      & $\approx$6{,}000 \\ \hline
+Боловсруулагч файл                & 12 \\ \hline
+REST API цэг                      & 45 \\ \hline
+Өгөгдлийн сангийн хүснэгт         & 11 \\ \hline
+React Native дэлгэц               & 17 \\ \hline
+Эх ангилал (JSON)                 & 17 (12 зарлага + 5 орлого) \\ \hline
+Docker контейнер                  & 2 (postgres + сервер тал) \\ \hline
+Дэмждэг файлын формат             & 3 (PDF, XLSX, CSV) \\ \hline
+Дэмжих банкны формат              & 5 (Хаан, Голомт, ХХБ, Хас, Төрийн) \\ \hline
+AI үндсэн загвар                  & Gemini 2.5 Flash \\ \hline
+AI нөөц нийлүүлэгч                  & OpenRouter (6+ үнэгүй загвар) \\ \hline
+\end{tabular}
+\caption{Хэрэгжүүлсэн системийн тоон үзүүлэлтүүд}
+\label{tab:metrics}
+\end{table}
+
+\textbf{Дүгнэлт.} Энэ бүлэгт системийн архитектур, сервер талын кодын зохион байгуулалт, загваруудын class диаграм, өгөгдлийн сангийн ER загвар, REST API цэгүүд, AI шинжилгээний долоон алхамт урсгал, дарааллын диаграм, гүйлгээ нэмэх үйл ажиллагааны диаграм, хэрэглэгч талын дэлгэц, аюулгүй байдлын механизм болон хэрэгжүүлэлтийн тоон үзүүлэлтийг танилцууллаа. Дараагийн хэсэгт дипломын ажлын нэгдсэн дүгнэлт, цаашдын хөгжүүлэлтийн чиглэлийг авч үзнэ.
