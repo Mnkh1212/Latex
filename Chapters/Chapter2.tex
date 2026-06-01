@@ -277,7 +277,7 @@ NFR-10 & Засварлах боломж      & Кодын тестийн бүр
 
 % Storage (top)
 \node[db]     (pg)    at (-3, 4)   {PostgreSQL 16 \\ \scriptsize 11 хүснэгт};
-\node[storage](fs)    at ( 3, 4)   {MinIO bucket \\ \scriptsize S3-нийцтэй обьект хадгалалт};
+\node[storage](fs)    at ( 3, 4)   {MinIO bucket \\ \scriptsize S3-нийцтэй объект хадгалалт};
 
 % Push / external (bottom)
 \node[push]   (expo)  at (-3, -4)  {Expo Push \\ \scriptsize Сервис};
@@ -306,7 +306,7 @@ NFR-10 & Засварлах боломж      & Кодын тестийн бүр
 \label{fig:system-context}
 \end{figure}
 
-Энэхүү диаграм нь гадаад орчинтойгоо холбогдох \textbf{2 оролцогч} (хэрэглэгч, админ), \textbf{3 AI үйлчилгээ} (Gemini --- үндсэн, OpenRouter --- нөөц, Python задлагч), \textbf{2 хадгалалтын систем} (PostgreSQL --- бүтэцлэгдсэн өгөгдөл, MinIO --- S3-нийцтэй обьект хадгалалт буюу хуулга/аватар), мөн \textbf{2 гадаад мэдэгдэл / нэвтрэлтийн үйлчилгээ} (Expo Push, OAuth) гэсэн 9 интерфейсээс бүрдэхийг харуулна.
+Энэхүү диаграм нь гадаад орчинтойгоо холбогдох \textbf{2 оролцогч} (хэрэглэгч, админ), \textbf{3 AI үйлчилгээ} (Gemini --- үндсэн, OpenRouter --- нөөц, Python задлагч), \textbf{2 хадгалалтын систем} (PostgreSQL --- бүтэцлэгдсэн өгөгдөл, MinIO --- S3-нийцтэй объект хадгалалт буюу хуулга/аватар), мөн \textbf{2 гадаад мэдэгдэл / нэвтрэлтийн үйлчилгээ} (Expo Push, OAuth) гэсэн 9 интерфейсээс бүрдэхийг харуулна.
 
 \section{Хэрэглээний тохиолдлын диаграм}
 Системийн хэрэглээний тохиолдлын диаграммыг доор үзүүлэв. Энэ нь оролцогчид (actor) болон тэдгээрийн гүйцэтгэх боломжтой үйлдлүүдийн уялдааг харуулна. Хэрэглээний тохиолдлуудыг үүрэг зориулалтын дагуу гурван бүлэгт хуваан өнгөөр ялгасан: \textcolor{accentblue!80!black}{\textbf{Нэвтрэлт}}, \textcolor{accentgreen!60!black}{\textbf{Санхүү}} ба \textcolor{accentpurple!80!black}{\textbf{AI / Мэдэгдэл}}.
@@ -564,7 +564,7 @@ NFR-10 & Засварлах боломж      & Кодын тестийн бүр
     \item \textbf{Алхам:}
     \begin{enumerate}
         \item Хэрэглэгч PDF/Excel/CSV файл байршуулна.
-        \item Сервер файлыг MinIO \texttt{fintrack-statements} bucket дотор обьект хэлбэрээр байршуулна.
+        \item Сервер файлыг MinIO \texttt{fintrack-statements} bucket дотор объект хэлбэрээр байршуулна.
         \item Задлагч ажиллаж \texttt{ParsedStatement} бүтэц гаргана.
         \item Ангиллын задаргаа автоматаар тооцогдоно.
         \item AI / LLM үйлчилгээ рүү хураангуй ба зөвлөмжийн хүсэлт явна.
