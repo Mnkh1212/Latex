@@ -619,34 +619,63 @@ GET    & \texttt{/activity-logs/summary}    & Аудит нэгтгэлийн с
 \begin{tikzpicture}[
     actor/.style={draw=darknavy, fill=accentteal!30, thick, rectangle, rounded corners, minimum width=2.2cm, minimum height=0.7cm, font=\footnotesize},
     msg/.style={->, thick, draw=darknavy, font=\scriptsize},
-    ret/.style={->, thick, draw=accentgreen, dashed, font=\scriptsize},
-    note/.style={rectangle, rounded corners=3pt, draw=accentorange!85!black, fill=accentyellow!35, font=\scriptsize, align=center, very thick, inner sep=4pt}
+    ret/.style={->, thick, draw=accentgreen!60!black, dashed, font=\scriptsize},
+    lbl/.style={font=\scriptsize, fill=white, inner xsep=4pt, inner ysep=1pt, sloped=false},
+    note/.style={rectangle, rounded corners=3pt, draw=accentorange!85!black, fill=accentyellow!35, font=\scriptsize, align=center, very thick, inner sep=5pt}
 ]
 
-\node[actor] (u)  at (0, 0)   {Хэрэглэгч};
-\node[actor] (be) at (3, 0)   {Сервер тал};
-\node[actor] (mn) at (6, 0)   {MinIO};
-\node[actor] (ps) at (9, 0)   {Parser};
-\node[actor] (ai) at (12, 0)  {AI / LLM};
-\node[actor] (db) at (15, 0)  {DB};
+% --- Жижигхэн зайтай байрлуулсан 6 lifeline (өргөн 18) ---
+\node[actor] (u)  at (0, 0)    {Хэрэглэгч};
+\node[actor] (be) at (3.6, 0)  {Сервер тал};
+\node[actor] (mn) at (7.2, 0)  {MinIO};
+\node[actor] (ps) at (10.8, 0) {Parser};
+\node[actor] (ai) at (14.4, 0) {AI / LLM};
+\node[actor] (db) at (18.0, 0) {DB};
 
-\foreach \x in {0,3,6,9,12,15} {
-    \draw[dashed, thick, gray] (\x, -0.4) -- (\x, -9);
+\foreach \x in {0, 3.6, 7.2, 10.8, 14.4, 18.0} {
+    \draw[dashed, very thin, gray!60] (\x, -0.4) -- (\x, -10.3);
 }
 
-\draw[msg] (0, -1.0)  -- node[above]{POST /ai/analysis (file + JWT)} (3, -1.0);
-\draw[msg] (3, -1.7)  -- node[above]{PutObject (хуулга PDF/XLSX)} (6, -1.7);
-\draw[ret] (6, -2.4)  -- node[above]{object key} (3, -2.4);
-\draw[msg] (3, -3.1)  -- node[above]{POST /parse (multipart proxy)} (9, -3.1);
-\draw[ret] (9, -3.8)  -- node[above]{ParsedStatement JSON} (3, -3.8);
-\draw[msg] (3, -4.5)  -- node[above]{системийн зааварчилгаа + JSON контекст} (12, -4.5);
-\draw[ret] (12, -5.2) -- node[above]{summary + 3--5 зөвлөмж} (3, -5.2);
-\draw[msg] (3, -5.9)  -- node[above]{INSERT ai\_analyses (JSON багана)} (15, -5.9);
-\draw[msg] (3, -6.6)  -- node[above]{BatchCreate transactions} (15, -6.6);
-\draw[msg] (3, -7.3)  -- node[above]{INSERT activity\_log} (15, -7.3);
-\draw[ret] (3, -8.0)  -- node[above]{AIAnalysisResponse JSON} (0, -8.0);
+% --- Шошго бүгд цагаан background-той тул шугам дээр давхрахгүй ---
+\draw[msg] (0,    -1.0)  -- (3.6, -1.0)
+    node[lbl, midway, above] {POST /ai/analysis (file + JWT)};
 
-\node[note] at (12, -8.7) {AI давхарга: Gemini (анхдагч) амжилтгүй (geo-block / 429 / 5xx) \\ $\Rightarrow$ OpenRouter руу автомат нөөц шилжилт};
+\draw[msg] (3.6,  -1.9)  -- (7.2, -1.9)
+    node[lbl, midway, above] {PutObject (хуулга PDF/XLSX)};
+
+\draw[ret] (7.2,  -2.7)  -- (3.6, -2.7)
+    node[lbl, midway, above] {object key};
+
+\draw[msg] (3.6,  -3.6)  -- (10.8, -3.6)
+    node[lbl, midway, above] {POST /parse (multipart proxy)};
+
+\draw[ret] (10.8, -4.5)  -- (3.6, -4.5)
+    node[lbl, midway, above] {ParsedStatement JSON};
+
+\draw[msg] (3.6,  -5.4)  -- (14.4, -5.4)
+    node[lbl, midway, above] {system prompt + JSON контекст};
+
+\draw[ret] (14.4, -6.3)  -- (3.6, -6.3)
+    node[lbl, midway, above] {summary + 3--5 зөвлөмж};
+
+\draw[msg] (3.6,  -7.2)  -- (18.0, -7.2)
+    node[lbl, midway, above] {INSERT ai\_analyses (JSON багана)};
+
+\draw[msg] (3.6,  -8.1)  -- (18.0, -8.1)
+    node[lbl, midway, above] {BatchCreate transactions};
+
+\draw[msg] (3.6,  -9.0)  -- (18.0, -9.0)
+    node[lbl, midway, above] {INSERT activity\_log};
+
+\draw[ret] (3.6,  -9.9)  -- (0, -9.9)
+    node[lbl, midway, above] {AIAnalysisResponse JSON};
+
+% --- Нот хайрцаг AI lifeline дээр (5.4 ба 6.3 хоорондох мессежийн ойролцоо) ---
+\node[note, anchor=west, font=\tiny, text width=4.5cm]
+    at (14.7, -5.85)
+    {\textbf{AI давхрагын fallback:}\\
+     Gemini амжилтгүй (geo-block / 429 / 5xx) $\Rightarrow$
+     OpenRouter руу автомат нөөц шилжилт};
 
 \end{tikzpicture}
 }
