@@ -610,6 +610,52 @@ GET    & \texttt{/activity-logs/summary}    & Аудит нэгтгэлийн с
     \item \textbf{Хариулт.} Хэрэглэгч тал руу \texttt{AIAnalysisResponse} JSON-оор бүх дугаар, графикийн өгөгдөл, зөвлөмж, AI хураангуй буцаана.
 \end{enumerate}
 
+\subsection{AI шинжилгээний sequence diagram}
+Дээрх 7 алхмыг \texttt{ai\_analysis.go:AnalyzeStatement} боловсруулагчийн дотоод дуудлагын дарааллаар нь sequence diagram хэлбэрээр харуулъя. Энэ нь MinIO, Python parser, AI / LLM, PostgreSQL гэсэн 4 өөр үйлчилгээний хооронд хэрэглэгчийн ганц POST хүсэлтэд хариулахаар хийгдэх 11 дотоод дуудлагын зохион байгуулалтыг тодорхой үзүүлнэ.
+
+\begin{figure}[ht]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    actor/.style={draw=darknavy, fill=accentteal!30, thick, rectangle, rounded corners, minimum width=2.2cm, minimum height=0.7cm, font=\footnotesize},
+    msg/.style={->, thick, draw=darknavy, font=\scriptsize},
+    ret/.style={->, thick, draw=accentgreen, dashed, font=\scriptsize},
+    note/.style={rectangle, rounded corners=3pt, draw=accentorange!85!black, fill=accentyellow!35, font=\scriptsize, align=center, very thick, inner sep=4pt}
+]
+
+\node[actor] (u)  at (0, 0)   {Хэрэглэгч};
+\node[actor] (be) at (3, 0)   {Сервер тал};
+\node[actor] (mn) at (6, 0)   {MinIO};
+\node[actor] (ps) at (9, 0)   {Parser};
+\node[actor] (ai) at (12, 0)  {AI / LLM};
+\node[actor] (db) at (15, 0)  {DB};
+
+\foreach \x in {0,3,6,9,12,15} {
+    \draw[dashed, thick, gray] (\x, -0.4) -- (\x, -9);
+}
+
+\draw[msg] (0, -1.0)  -- node[above]{POST /ai/analysis (file + JWT)} (3, -1.0);
+\draw[msg] (3, -1.7)  -- node[above]{PutObject (хуулга PDF/XLSX)} (6, -1.7);
+\draw[ret] (6, -2.4)  -- node[above]{object key} (3, -2.4);
+\draw[msg] (3, -3.1)  -- node[above]{POST /parse (multipart proxy)} (9, -3.1);
+\draw[ret] (9, -3.8)  -- node[above]{ParsedStatement JSON} (3, -3.8);
+\draw[msg] (3, -4.5)  -- node[above]{системийн зааварчилгаа + JSON контекст} (12, -4.5);
+\draw[ret] (12, -5.2) -- node[above]{summary + 3--5 зөвлөмж} (3, -5.2);
+\draw[msg] (3, -5.9)  -- node[above]{INSERT ai\_analyses (JSON багана)} (15, -5.9);
+\draw[msg] (3, -6.6)  -- node[above]{BatchCreate transactions} (15, -6.6);
+\draw[msg] (3, -7.3)  -- node[above]{INSERT activity\_log} (15, -7.3);
+\draw[ret] (3, -8.0)  -- node[above]{AIAnalysisResponse JSON} (0, -8.0);
+
+\node[note] at (12, -8.7) {AI давхарга: Gemini (анхдагч) fail (geo-block / 429 / 5xx) \\ $\Rightarrow$ OpenRouter руу автомат нөөц шилжилт};
+
+\end{tikzpicture}
+}
+\caption{Sequence Diagram (Дарааллын диаграм) --- Банкны хуулгын AI шинжилгээ}
+\label{fig:seq-analysis}
+\end{figure}
+
+\textbf{Тайлбар.} Хар шулуун шугам нь хүсэлт (request), цэгтэй ногоон шугам нь хариулт (response). Шар хайрцагт AI давхрагын дотоод нөөц шилжилтийн зарчмыг тусгайлан тэмдэглэв --- хэрэглэгч талд энэ үйл явц харагдахгүй, зөвхөн backend дотор шийдэгдэнэ. Хэрэглэгч талаас гарсан \emph{нэг} POST хүсэлт нь backend дотор \textbf{4 өөр үйлчилгээ} (MinIO, Parser, AI, DB)-тэй харьцаж 11 дотоод дуудлага хийгдээд эцэст нь \emph{нэг} JSON хариулт болж буцна.
+
 \subsection{AI чатын алхамчилсан гүйцэтгэл}
 
 \begin{figure}[ht]
@@ -1004,4 +1050,4 @@ AI нөөц нийлүүлэгч                  & OpenRouter (6+ үнэгүй 
 \label{tab:metrics}
 \end{table}
 
-\textbf{Дүгнэлт.} Энэ бүлэгт системийн архитектур, сервер талын кодын зохион байгуулалт, загваруудын class диаграм, өгөгдлийн сангийн ER загвар, MinIO обьект хадгалалтын дизайн, REST API цэгүүд, AI шинжилгээний долоон алхамт урсгал, дарааллын диаграм, гүйлгээ нэмэх үйл ажиллагааны диаграм, хэрэглэгч талын дэлгэц, аюулгүй байдлын механизм болон хэрэгжүүлэлтийн тоон үзүүлэлтийг танилцууллаа. Дараагийн хэсэгт дипломын ажлын нэгдсэн дүгнэлт, цаашдын хөгжүүлэлтийн чиглэлийг авч үзнэ.
+\textbf{Дүгнэлт.} Энэ бүлэгт системийн архитектур, сервер талын кодын зохион байгуулалт, загваруудын class диаграм, өгөгдлийн сангийн ER загвар, MinIO обьект хадгалалтын дизайн, REST API цэгүүд, AI шинжилгээний долоон алхамт урсгал, хоёр дарааллын диаграм (AI чат болон банкны хуулгын шинжилгээ), гүйлгээ нэмэх үйл ажиллагааны диаграм, хэрэглэгч талын дэлгэц, аюулгүй байдлын механизм болон хэрэгжүүлэлтийн тоон үзүүлэлтийг танилцууллаа. Дараагийн хэсэгт дипломын ажлын нэгдсэн дүгнэлт, цаашдын хөгжүүлэлтийн чиглэлийг авч үзнэ.
